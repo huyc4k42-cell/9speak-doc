@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>9Speak — Luồng Practice (BẢN TỐI ƯU)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  body{background:#f8fafc}
+  .scrollbar-thin::-webkit-scrollbar{width:6px}
+  .scrollbar-thin::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:3px}
+  @keyframes bounceBar{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .rec-bar{animation:bounceBar .6s infinite ease-in-out;transform-origin:bottom}
+  .fix-del{color:#e11d48;text-decoration:line-through;text-decoration-thickness:1.5px}
+  .fix-ins{color:#059669;font-weight:600;background:#ecfdf5;border-radius:4px;padding:0 3px;cursor:pointer}
+  .fix-ins:hover{background:#d1fae5}
+</style>
+</head>
+<body class="text-slate-900">
+<div class="mx-auto max-w-[1180px] p-3 sm:p-3">
+  <div class="mb-3 flex items-center justify-between">
+    <div class="flex items-center gap-2 font-bold text-[17px]"><span class="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-400 text-white text-sm">9</span> 9Speak · Luyện tập</div>
+    <div class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11.5px] font-semibold text-emerald-700">Mockup luồng Practice — <b>BẢN TỐI ƯU</b></div>
+  </div>
+
+  <!-- ===================== SCREEN 1: INDEX ===================== -->
+  <section id="scrIndex" class="rounded-xl bg-slate-50/50">
+    <div class="flex gap-6">
+      <div class="flex w-[340px] shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-3 text-white">
+          <div class="mb-4 flex items-center justify-between">
+            <h3 class="flex items-center gap-2 text-sm font-semibold"><i data-lucide="sparkles" class="h-4 w-4 text-blue-200"></i> IELTS Forecast</h3>
+            <span class="rounded-md bg-white/20 px-2 py-1 text-xs backdrop-blur-sm">Cập nhật: 18/03/2026</span>
+          </div>
+          <div class="mb-1 grid grid-cols-3 gap-2 rounded-xl bg-white/10 p-3 backdrop-blur-sm">
+            <div class="flex flex-col items-center"><span class="text-sm font-bold leading-none">152</span><span class="mt-1 text-xs text-blue-100">Part 1</span></div>
+            <div class="flex flex-col items-center border-l border-white/20"><span class="text-sm font-bold leading-none">86</span><span class="mt-1 text-xs text-blue-100">Part 2</span></div>
+            <div class="flex flex-col items-center border-l border-white/20"><span class="text-sm font-bold leading-none">94</span><span class="mt-1 text-xs text-blue-100">Part 3</span></div>
+          </div>
+        </div>
+        <div class="border-b border-slate-100 bg-slate-50/50 p-3"><div id="partTabs" class="flex gap-1 rounded-xl bg-slate-200/60 p-1"></div></div>
+        <div id="topicList" class="scrollbar-thin max-h-[420px] flex-1 space-y-1 overflow-y-auto p-3"></div>
+      </div>
+      <div id="topicDetail" class="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"></div>
+    </div>
+  </section>
+
+  <!-- ===================== SCREEN 2: PRACTICE ROOM ===================== -->
+  <section id="scrRoom" class="hidden">
+    <div class="mb-4 flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-2 shadow-sm">
+      <button onclick="goIndex()" class="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900"><i data-lucide="arrow-left" class="h-4 w-4"></i> Luyện Tập Chi Tiết</button>
+      <div class="flex items-center gap-2 text-sm">
+        <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600" id="hdrPart">Part 1</span>
+        <span class="text-slate-400">·</span><span class="font-medium text-slate-700" id="hdrTopic">Hometown</span>
+        <span class="text-slate-400">·</span><span class="text-slate-500" id="hdrCounter">Câu 1 / 5</span>
+      </div>
+    </div>
+
+    <div class="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-2">
+      <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Demo edge case</span>
+      <select id="simCase" onchange="onSimChange(this.value)" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm text-slate-700 outline-none">
+        <option value="normal">Bình thường (chấm điểm)</option>
+        <option value="A1">A1 · Mic bị từ chối</option>
+        <option value="A2">A2 · Không có mic / không hỗ trợ</option>
+        <option value="B1">B1 · Ghi quá ngắn</option>
+        <option value="B2">B2 · Im lặng / không có giọng</option>
+        <option value="B3">B3 · Tạp âm nhiễu</option>
+        <option value="B4">B4 · Quá dài (tự dừng + vẫn chấm)</option>
+        <option value="B5">B5 · Sai ngôn ngữ</option>
+        <option value="C1">C1 · Lệch đề</option>
+      </select>
+      <span class="text-xs text-slate-400">→ bấm nút 🎙️ để xem kết quả tình huống (demo: giới hạn dài = 15s)</span>
+    </div>
+
+    <div class="flex h-[calc(100dvh-9rem)] min-h-[620px] flex-col gap-6 lg:flex-row">
+      <!-- LEFT 2/3 -->
+      <div class="flex w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm lg:w-2/3">
+        <div class="border-b border-slate-100 p-3 sm:p-3">
+          <div class="rounded-tl-2xl rounded-tr-[2rem] rounded-bl-[2rem] rounded-br-[2rem] border border-slate-200 bg-white p-3 shadow-sm sm:p-3">
+            <div class="flex items-start gap-2">
+              <button onclick="playQ(this)" class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow hover:bg-blue-700"><i data-lucide="volume-2" class="h-5 w-5"></i></button>
+              <h3 id="qtext" class="text-base font-semibold leading-tight text-slate-900">&quot;Where is your hometown?&quot;</h3>
+            </div>
+          </div>
+        </div>
+        <div id="trendBar" class="shrink-0 empty:hidden"></div>
+        <div id="timeline" class="scrollbar-thin flex-1 overflow-y-auto bg-slate-50/30 p-3"></div>
+        <div class="flex shrink-0 flex-col items-center justify-center border-t border-slate-200 bg-white p-3 sm:p-4">
+          <div class="flex w-full flex-col gap-4 sm:relative sm:min-h-[88px] sm:items-center sm:justify-center">
+            <div class="flex flex-col items-center gap-2 sm:order-2">
+              <button id="micBtn" onclick="toggleRec()" class="flex h-14 w-14 items-center justify-center rounded-full p-0 text-white shadow-xl ring-4 transition-all hover:scale-105 bg-blue-600 ring-blue-600/20 hover:bg-blue-700"><i data-lucide="mic" class="h-7 w-7"></i></button>
+              <span id="recLabel" class="text-xs font-medium uppercase tracking-wider text-slate-500">Bắt đầu ghi âm</span>
+            </div>
+            <div class="flex w-full flex-col gap-2 sm:contents">
+              <button id="prevQ" onclick="prevQuestion()" class="flex w-full items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 sm:absolute sm:left-0 sm:w-auto disabled:opacity-40"><i data-lucide="arrow-left" class="mr-2 h-4 w-4"></i> Câu trước</button>
+              <button id="nextQ" onclick="nextQuestion()" class="flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:absolute sm:right-0 sm:w-auto disabled:opacity-40">Câu tiếp <i data-lucide="arrow-right" class="ml-2 h-4 w-4"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT 1/3: Assistant rail -->
+      <div class="flex w-full flex-col lg:w-1/3">
+        <div class="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div class="shrink-0 border-b border-blue-100 bg-blue-50/40 px-5 py-4 text-center">
+            <h3 class="flex items-center justify-center gap-2 text-base font-semibold leading-tight text-slate-900"><i data-lucide="sparkles" class="h-5 w-5 text-blue-500"></i> AI hỗ trợ</h3>
+          </div>
+          <div id="railBody" class="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-y-auto p-3"></div>
+          <div class="shrink-0 space-y-3 border-t border-slate-200 bg-white p-3">
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="railAdd('sample')" class="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50/50 px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-blue-50"><i data-lucide="book-open-text" class="h-5 w-5 text-blue-600"></i> Câu trả lời mẫu</button>
+              <button onclick="railAdd('vocab')" class="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-amber-50"><i data-lucide="lightbulb" class="h-5 w-5 text-amber-700"></i> Từ vựng chủ đề</button>
+            </div>
+            <button onclick="railAdd('note')" class="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"><i data-lucide="notebook-pen" class="h-5 w-5 text-slate-600"></i> Ghi chú</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- correction popup -->
+<div id="fixpop" class="fixed z-50 hidden w-[260px] rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-2xl"></div>
+
+<!-- per-word pronunciation drill (ảnh 2) -->
+<div id="drillScrim" onclick="closeDrill()" class="fixed inset-0 z-[60] hidden bg-slate-900/40"></div>
+<div id="drillModal" class="fixed left-1/2 top-1/2 z-[70] hidden max-h-[92vh] w-[440px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white p-3 shadow-2xl"></div>
+
+<!-- Phát âm — panel rộng -->
+<div id="pronScrim" onclick="closePronModal()" class="fixed inset-0 z-40 hidden bg-slate-900/40"></div>
+<div id="pronModal" class="fixed left-1/2 top-1/2 z-50 hidden max-h-[92vh] w-[760px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"></div>
+
+<!-- Cải thiện câu — panel rộng + toast -->
+<div id="impScrim" onclick="closeImpModal()" class="fixed inset-0 z-40 hidden bg-slate-900/40"></div>
+<div id="impModal" class="fixed left-1/2 top-1/2 z-50 hidden max-h-[92vh] w-[720px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"></div>
+<div id="toast2" class="pointer-events-none fixed bottom-5 left-1/2 z-[80] hidden -translate-x-1/2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-xl"></div>
+
+<!-- Trôi chảy & Mạch lạc — panel rộng -->
+<div id="fluScrim" onclick="closeFluModal()" class="fixed inset-0 z-40 hidden bg-slate-900/40"></div>
+<div id="fluModal" class="fixed left-1/2 top-1/2 z-50 hidden max-h-[92vh] w-[680px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"></div>
+
+<!-- Từ vựng — panel rộng -->
+<div id="vocScrim" onclick="closeVocModal()" class="fixed inset-0 z-40 hidden bg-slate-900/40"></div>
+<div id="vocModal" class="fixed left-1/2 top-1/2 z-50 hidden max-h-[92vh] w-[680px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"></div>
+
+<!-- Ngữ pháp — panel rộng -->
+<div id="gramScrim" onclick="closeGramModal()" class="fixed inset-0 z-40 hidden bg-slate-900/40"></div>
+<div id="gramModal" class="fixed left-1/2 top-1/2 z-50 hidden max-h-[92vh] w-[680px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"></div>
+
+<script>
+/* ===================== DATA ===================== */
+const PARTS=['Part 1','Part 2','Part 3'];
+const TOPICS={
+ 'Part 1':[
+   {id:'home',title:'Hometown',cat:'Chủ đề quen thuộc',q:5,time:'4–6 phút',tips:['Dùng thì hiện tại đơn cho thói quen, quá khứ cho kỷ niệm.','Nêu ví dụ cụ thể về địa điểm.'],
+    questions:['Where is your hometown?','What do you like most about it?','Has it changed much in recent years?','Would you like to live there in the future?','What is the food like there?']},
+   {id:'work',title:'Work & Study',cat:'Chủ đề quen thuộc',q:4,time:'4–5 phút',tips:['Mô tả công việc/ngành học bằng từ vựng chuyên đề.','Tránh lặp "job", "study".'],
+    questions:['Do you work or study?','Why did you choose it?','What do you enjoy about it?','What are your future plans?']},
+   {id:'hobby',title:'Hobbies',cat:'Sở thích',q:5,time:'4–6 phút',tips:['Dùng "I’m keen on…", "I’m into…".','Giải thích vì sao bạn thích.'],
+    questions:['What do you do in your free time?','How long have you had this hobby?','Who did you learn it from?','Is it popular in your country?','Would you recommend it?']},
+ ],
+ 'Part 2':[
+   {id:'person',title:'Describe a person you admire',cat:'People',q:1,time:'3–4 phút',tips:['Theo 4 gạch đầu dòng của cue card.','Chuẩn bị 1 phút, nói liền mạch 1–2 phút.'],
+    questions:['Describe a person you admire.\nYou should say:\n• who this person is\n• how you know them\n• what they do\n• and explain why you admire them.']},
+ ],
+ 'Part 3':[
+   {id:'edu',title:'Education & Society',cat:'Thảo luận',q:4,time:'4–6 phút',tips:['Đưa quan điểm 2 chiều.','Hỗ trợ ý kiến bằng lý do, ví dụ.'],
+    questions:['How has education changed in your country?','Should education be free for everyone?','What role does technology play in learning?','Do you think exams are a fair way to assess students?']},
+ ],
+};
+// 4 tiêu chí: key, label, màu, band, nội dung phân tích
+const CRITERIA=[
+ {key:'fluency',label:'Trôi chảy & Mạch lạc',score:6.5,bg:'#edf4ff',text:'#2563eb',labelTone:'#1e3a8a',
+  analysis:['Tốc độ nói ~102 từ/phút — ổn định, hơi chậm ở câu dài.','2 quãng ngắt để tìm từ (giữa câu) làm gãy mạch nhẹ.','1 filler "uhm". Liên kết câu dùng "whenever", "and" — ổn nhưng đơn giản.','Gợi ý: thêm liên từ đa dạng (besides, as a result) và giảm ngắt giữa câu.']},
+ {key:'lexical',label:'Từ vựng',score:6.0,bg:'#edf9f5',text:'#059669',labelTone:'#065f46',
+  analysis:['Dải CEFR chủ yếu B1–B2; ít từ chuyên đề.','2 chỗ dùng từ cơ bản có thể nâng cấp (enjoy → cherish, friendly people → warm-hearted locals).','Lặp "town" 2 lần — cân nhắc paraphrase.','Gợi ý: dùng collocation tự nhiên: tranquil atmosphere, on the outskirts of.']},
+ {key:'grammar',label:'Ngữ pháp',score:6.0,bg:'#fff7e8',text:'#d97706',labelTone:'#92400e',
+  analysis:['1 lỗi thiếu trạng từ: "go" → "go back".','Câu chủ yếu là câu đơn; có 1 câu phức với "whenever…".','Chưa thử cấu trúc nâng cao (mệnh đề quan hệ, đảo ngữ).','Gợi ý: thêm relative clause: "…the locals, who always greet you with a smile".']},
+ {key:'pronunciation',label:'Phát âm',score:6.5,bg:'#f7f0ff',text:'#7c3aed',labelTone:'#5b21b6',
+  analysis:['Từ phát âm yếu: "work" /wɜːrk/ — nguyên âm chưa rõ.','Âm cuối /θ/ /ð/ đôi chỗ bị lược.','Ngữ điệu hơi phẳng ở cuối câu khẳng định.','Gợi ý: luyện tối thiểu các âm cuối và nhấn trọng âm từ khóa.']},
+];
+// Câu user — track changes: <FIX:wrong|right|kind|explain>
+// điểm theo từng lượt (mô phỏng) để minh hoạ delta giữa các lượt
+const SCORE_SEQ=[
+  {overall:6.0,fluency:6.0,lexical:6.0,grammar:5.5,pronunciation:6.5},
+  {overall:6.5,fluency:6.5,lexical:6.0,grammar:6.0,pronunciation:6.5},
+  {overall:6.5,fluency:6.5,lexical:6.5,grammar:6.0,pronunciation:6.0},
+  {overall:7.0,fluency:7.0,lexical:6.5,grammar:6.5,pronunciation:7.0},
+];
+function fmtDelta(d){return Math.abs(d).toFixed(1).replace(/\.0$/,'');}
+function bandDelta(d){
+  if(d>0)return `<span class="inline-flex items-center rounded-md bg-emerald-100 px-1.5 py-0.5 text-[11px] font-bold text-emerald-700">▲ +${fmtDelta(d)}</span>`;
+  if(d<0)return `<span class="inline-flex items-center rounded-md bg-rose-100 px-1.5 py-0.5 text-[11px] font-bold text-rose-600">▼ −${fmtDelta(d)}</span>`;
+  return `<span class="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold text-slate-400">– 0</span>`;
+}
+function miniDelta(d){
+  if(d>0)return `<span class="text-[10px] font-bold text-emerald-600">▲${fmtDelta(d)}</span>`;
+  if(d<0)return `<span class="text-[10px] font-bold text-rose-500">▼${fmtDelta(d)}</span>`;
+  return `<span class="text-[10px] font-bold text-slate-300">–</span>`;
+}
+function encourageLine(s,prev){
+  if(!prev)return '';
+  const d=+(s.overall-prev.overall).toFixed(1);
+  if(d>0)return `<div class="rounded-lg bg-emerald-50 px-3 py-2 text-center text-[12px] font-medium text-emerald-700">🎉 Tiến bộ! Band tổng +${fmtDelta(d)} so với lần trước — giữ phong độ nhé!</div>`;
+  if(d<0)return `<div class="rounded-lg bg-amber-50 px-3 py-2 text-center text-[12px] font-medium text-amber-700">Band tổng giảm ${fmtDelta(d)} so với lần trước — đừng nản, thử lại để cải thiện nhé! 💪</div>`;
+  const ups=CRITERIA.filter(c=>s[c.key]>prev[c.key]).map(c=>c.label);
+  const downs=CRITERIA.filter(c=>s[c.key]<prev[c.key]).map(c=>c.label);
+  let detail='';
+  if(ups.length)detail+=` <span class="text-emerald-600">↑ ${ups.join(', ')}</span>`;
+  if(downs.length)detail+=`${ups.length?' · ':' '}<span class="text-rose-500">↓ ${downs.join(', ')}</span>`;
+  return `<div class="rounded-lg bg-slate-50 px-3 py-2 text-center text-[12px] font-medium text-slate-500">Band tổng giữ nguyên so với lần trước.${detail||' Cố thêm chút nữa nhé!'}</div>`;
+}
+function trendCard(){
+  const results=attempts.filter(a=>a.type==='result'&&a.scores);
+  if(results.length<2)return '';
+  const vals=results.map(r=>r.scores.overall);
+  const n=vals.length,W=n*48+24,H=48,pad=16;
+  const min=Math.min(...vals)-0.4,max=Math.max(...vals)+0.4,rng=(max-min)||1;
+  const x=i=>pad+i*((W-pad*2)/(n-1)),y=v=>H-8-((v-min)/rng)*(H-20);
+  const pts=vals.map((v,i)=>`${x(i)},${y(v)}`).join(' ');
+  const dots=vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="#4f46e5"/><text x="${x(i)}" y="${y(v)-7}" font-size="9" fill="#475569" text-anchor="middle">${v.toFixed(1)}</text>`).join('');
+  const dd=+(vals[n-1]-vals[0]).toFixed(1);
+  return `<div class="mx-3 mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+    <div class="text-[11px] font-semibold uppercase leading-tight tracking-wide text-slate-400">Tiến bộ<br>band tổng</div>
+    <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="overflow-visible"><polyline points="${pts}" fill="none" stroke="#c7d2fe" stroke-width="2"/>${dots}</svg>
+    <div class="ml-auto text-right"><div class="text-[11px] text-slate-400">Lần 1 → ${n}</div><div class="text-sm font-bold ${dd>0?'text-emerald-600':dd<0?'text-rose-500':'text-slate-500'}">${dd>0?'+':''}${dd} band</div></div>
+  </div>`;
+}
+const SENTENCE="My hometown is a small town near Hanoi. I really <FIX:enjoy|cherish|lexical|'enjoy' đúng nhưng cơ bản. 'cherish' (C1) diễn đạt tình cảm gắn bó mạnh và tự nhiên hơn.|Từ vựng> the peaceful atmosphere and the <FIX:friendly people|warm-hearted locals|lexical|'friendly people' ổn nhưng phổ thông. 'warm-hearted locals' nâng band từ vựng.|Từ vựng> there. Whenever I <FIX:go|go back|grammar|Thiếu trạng từ 'back'. 'go back' mới diễn đạt rõ ý quay về quê.|Ngữ pháp> , I can finally relax.";
+// transcript off-topic mẫu + chủ đề mà user lỡ nói lệch sang (để nêu rõ trong card)
+const OFFTOPIC_TRANSCRIPT="Well, honestly I think online advertising is incredibly powerful nowadays. Many brands spend huge budgets on social media campaigns to reach younger audiences, and influencers really shape what people buy these days.";
+const OFFTOPIC_SUBJECT="quảng cáo";
+// ===== PHÁT ÂM: transcript chấm màu theo mức lỗi =====
+// lvl: ok | minor (lỗi phụ, gạch chấm) | light (lỗi nhẹ, chữ vàng) | severe (lỗi nặng, đỏ + IPA)
+const PRON_TOKENS=[
+ {t:'I',lvl:'ok'},{t:'have',lvl:'ok'},{t:'mixed',lvl:'light',yellow:'ed'},{t:'feelings',lvl:'ok'},{t:'about',lvl:'light',yellow:'t'},{t:'advertisements',lvl:'minor'},{p:','},
+ {t:'sometimes',lvl:'ok'},{t:'they',lvl:'ok'},{t:'are',lvl:'severe',ipa:'ɑɹ'},{t:'entertaining',lvl:'minor'},{t:'and',lvl:'ok'},{t:'creative',lvl:'minor'},{p:','},
+ {t:'attracting',lvl:'severe',ipa:'əˌtɹæktɪŋ'},{t:'my',lvl:'ok'},{t:'attention',lvl:'ok'},{p:','},
+ {t:'however',lvl:'ok'},{t:'they',lvl:'ok'},{t:'can',lvl:'ok'},{t:'also',lvl:'ok'},{t:'be',lvl:'ok'},{t:'very',lvl:'ok'},{t:'repetitive',lvl:'minor'},{p:','},
+ {t:'especially',lvl:'ok'},{t:'on',lvl:'ok'},{t:'TV',lvl:'ok'},{p:','},{t:'which',lvl:'ok'},{t:'makes',lvl:'minor'},{t:'them',lvl:'minor'},{t:'less',lvl:'ok'},{t:'enjoyable',lvl:'severe',ipa:'ɛndʒɔɪəbl'},{p:'.'},
+ {t:'Overall',lvl:'minor'},{t:'I',lvl:'ok'},{t:'think',lvl:'minor'},{t:'they',lvl:'ok'},{t:'are',lvl:'severe',ipa:'ɑɹ'},{t:'important',lvl:'light',yellow:'t'},{t:'for',lvl:'ok'},{t:'businesses',lvl:'ok'},
+];
+// dữ liệu luyện âm từng từ (panel ảnh 2). state: ok | bad
+const PRON_WORDS={
+ mixed:{meaning:'pha trộn',model:['m','ɪ','k','s','t'],you:[['m','ok'],['ɪ','ok'],['k','ok'],['s','ok'],['s','bad']],target:'/t/',guide:'Đóng kín hoàn toàn, rồi bật ra — một âm tắc (như từ tea 🍵).',more:'Âm bạn phát ra nghe gần /s/ (như see 👀) — vị trí đặt lưỡi/môi giống nhau, nhưng hơi xì qua khe hẹp; với /t/, hơi bị chặn hoàn toàn rồi bật mạnh ra.'},
+ are:{meaning:'thì, là',model:['ɑ','ɹ'],you:[['ɑ','ok'],['ɹ','bad']],target:'/ɹ/',guide:'Cong nhẹ đầu lưỡi về phía sau, không chạm vòm miệng — âm /ɹ/ tiếng Anh.',more:'Bạn đang phát gần /r/ rung như tiếng Việt; với /ɹ/ lưỡi không rung, chỉ cong và giữ.'},
+ attracting:{meaning:'thu hút',model:['ə','t','ɹ','æ','k','t','ɪ','ŋ'],you:[['ə','ok'],['t','ok'],['ɹ','bad'],['æ','ok'],['k','ok'],['t','ok'],['ɪ','ok'],['ŋ','bad']],target:'/ŋ/',guide:'Nâng cuống lưỡi chạm vòm mềm, cho hơi thoát qua mũi — âm mũi /ŋ/.',more:'Đuôi "-ing" nên là /ɪŋ/, tránh thêm /g/ rõ ở cuối.'},
+ enjoyable:{meaning:'thú vị',model:['ɛ','n','dʒ','ɔɪ','ə','b','l'],you:[['ɛ','ok'],['n','ok'],['dʒ','bad'],['ɔɪ','ok'],['ə','ok'],['b','ok'],['l','ok']],target:'/dʒ/',guide:'Âm tắc-xát hữu thanh: chặn rồi bật như "j" trong job.',more:'Tránh phát thành /z/ hoặc /j/; bắt đầu bằng cách chặn lưỡi rồi bật có rung.'},
+};
+function pronWordData(w){return PRON_WORDS[w.toLowerCase()]||{meaning:'',model:[],you:[],target:'',guide:'Nghe mẫu và lặp lại, chú ý khẩu hình.',more:''};}
+
+let curPart='Part 1',curTopic=TOPICS['Part 1'][0],curQ=0;
+let recState='idle',recSec=0,recTimer=null,attempts=[],railItems=[];
+const icons=()=>{try{lucide.createIcons();}catch(e){}};
+
+/* ===================== SCREEN 1 (giữ như hiện tại) ===================== */
+function renderPartTabs(){document.getElementById('partTabs').innerHTML=PARTS.map(p=>`<button onclick="setPart('${p}')" class="flex-1 rounded-lg py-1.5 text-sm font-medium transition-all ${curPart===p?'bg-white text-blue-700 shadow-sm':'text-slate-500 hover:bg-slate-200/50 hover:text-slate-700'}">${p}</button>`).join('');}
+function setPart(p){curPart=p;curTopic=TOPICS[p][0];renderPartTabs();renderTopicList();renderDetail();}
+function selectTopic(id){curTopic=TOPICS[curPart].find(t=>t.id===id);renderTopicList();renderDetail();}
+function renderTopicList(){
+  document.getElementById('topicList').innerHTML=TOPICS[curPart].map(t=>{const sel=curTopic.id===t.id;
+    return `<button onclick="selectTopic('${t.id}')" class="w-full rounded-xl border p-3 text-left transition-all ${sel?'border-blue-200 bg-blue-50':'border-transparent bg-white hover:bg-slate-50'}">
+      <div class="mb-1 flex items-start justify-between"><h3 class="font-semibold ${sel?'text-blue-700':'text-slate-800'}">${t.title}</h3>${curPart!=='Part 1'?`<span class="whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">${t.cat}</span>`:''}</div>
+      <div class="mt-2 flex items-center gap-2 text-xs text-slate-500"><span class="flex items-center gap-1"><i data-lucide="message-circle" class="h-3 w-3"></i> ${t.q} câu</span><span class="flex items-center gap-1"><i data-lucide="clock" class="h-3 w-3"></i> ${t.time}</span></div></button>`;}).join('');
+  icons();
+}
+function renderDetail(){
+  const t=curTopic,isCue=curPart==='Part 2';
+  document.getElementById('topicDetail').innerHTML=`<div class="scrollbar-thin flex-1 overflow-y-auto p-8">
+    <div class="mb-8 flex items-start justify-between"><div>
+      <div class="mb-3 inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600">${t.cat}</div>
+      <h2 class="mb-2 text-base font-bold text-slate-900">${t.title}</h2>
+      <div class="flex items-center gap-4 text-sm text-slate-500"><span class="flex items-center gap-1.5"><i data-lucide="clock" class="h-4 w-4"></i> ${t.time}</span><span class="flex items-center gap-1.5"><i data-lucide="book-open" class="h-4 w-4"></i> ${t.q} câu hỏi</span></div></div>
+      <button onclick="startPractice(0)" class="flex shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"><i data-lucide="mic" class="h-4 w-4"></i> Bắt đầu luyện tập</button></div>
+    <div class="mb-8 space-y-3">${t.questions.map((q,i)=>`<button onclick="startPractice(${i})" class="group flex w-full items-start gap-4 rounded-xl border p-3 text-left transition-all ${isCue?'border-blue-200 bg-blue-50/30 hover:border-blue-300':'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'}">
+      <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isCue?'bg-blue-100 text-blue-700':'bg-blue-50 text-sm font-semibold text-blue-600'}">${isCue?'<i data-lucide=\"file-text\" class=\"h-4 w-4\"></i>':(i+1)}</div>
+      <p class="flex-1 pt-1 font-medium text-slate-800 ${isCue?'whitespace-pre-line leading-relaxed':''}">${q}</p>
+      <span class="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-600 group-hover:bg-blue-100"><i data-lucide="mic" class="h-3.5 w-3.5"></i> Luyện tập ngay</span></button>`).join('')}</div>
+    <div class="rounded-xl border border-amber-200/50 bg-amber-50 p-3"><div class="mb-3 flex items-center gap-2 font-semibold text-amber-800"><i data-lucide="lightbulb" class="h-5 w-5"></i><h3>Mẹo cho phần này</h3></div>
+      <ul class="space-y-2">${t.tips.map(tip=>`<li class="flex items-start gap-2 text-sm text-amber-900/80"><i data-lucide="check" class="mt-0.5 h-4 w-4 shrink-0 text-amber-600"></i><span>${tip}</span></li>`).join('')}</ul></div></div>`;
+  icons();
+}
+
+/* ===================== NAV ===================== */
+function goIndex(){document.getElementById('scrRoom').classList.add('hidden');document.getElementById('scrIndex').classList.remove('hidden');window.scrollTo(0,0);}
+function startPractice(qi){curQ=qi;attempts=[];railItems=[];resetRecState();document.getElementById('scrIndex').classList.add('hidden');document.getElementById('scrRoom').classList.remove('hidden');renderRoom();window.scrollTo(0,0);}
+function renderRoom(){
+  document.getElementById('hdrPart').textContent=curPart;document.getElementById('hdrTopic').textContent=curTopic.title;
+  document.getElementById('hdrCounter').textContent=`Câu ${curQ+1} / ${curTopic.questions.length}`;
+  const q=curTopic.questions[curQ],isCue=curPart==='Part 2';
+  document.getElementById('qtext').innerHTML=isCue?q.replace(/\n/g,'<br>'):`&quot;${q}&quot;`;
+  document.getElementById('qtext').className=isCue?'text-sm font-semibold leading-relaxed text-slate-900 whitespace-pre-line':'text-base font-semibold leading-tight text-slate-900';
+  document.getElementById('prevQ').disabled=curQ===0;document.getElementById('nextQ').disabled=curQ===curTopic.questions.length-1;
+  renderTimeline();renderRail();icons();
+}
+function prevQuestion(){if(curQ>0){curQ--;attempts=[];railItems=[];resetRecState();renderRoom();}}
+function nextQuestion(){if(curQ<curTopic.questions.length-1){curQ++;attempts=[];railItems=[];resetRecState();renderRoom();}}
+function playQ(b){b.classList.add('animate-pulse');setTimeout(()=>b.classList.remove('animate-pulse'),1300);}
+
+/* ===================== RECORD STATE MACHINE ===================== */
+function resetRecState(){recState='idle';clearInterval(recTimer);recSec=0;setMic();}
+function setMic(){
+  const m=document.getElementById('micBtn'),l=document.getElementById('recLabel');if(!m)return;
+  m.className='flex h-14 w-14 items-center justify-center rounded-full p-0 text-white shadow-xl ring-4 transition-all hover:scale-105 '+(recState==='recording'?'bg-red-500 ring-red-500/20 hover:bg-red-600':recState==='processing'?'bg-slate-400 ring-slate-400/20 opacity-50 cursor-not-allowed':'bg-blue-600 ring-blue-600/20 hover:bg-blue-700');
+  m.innerHTML=recState==='recording'?'<i data-lucide="square" class="h-6 w-6 fill-white"></i>':'<i data-lucide="mic" class="h-7 w-7"></i>';
+  l.textContent=recState==='recording'?'Nhấn để dừng':recState==='processing'?'Đang chấm điểm…':attempts.length?'Ghi âm lại':'Bắt đầu ghi âm';
+  icons();
+}
+let SIM='normal';
+const DEMO_MAX=15; // giây — demo (thực tế đề xuất: Part 1: 90s, Part 2: 120s, Part 3: 90s)
+function onSimChange(v){SIM=v;}
+function fmt(s){return '0:'+String(s).padStart(2,'0');}
+function updateRecLabel(){const l=document.getElementById('recLabel');if(!l||recState!=='recording')return;const left=DEMO_MAX-recSec;l.innerHTML=left<=5?`<span class="text-red-600">Đang ghi · ${fmt(recSec)} · tự dừng sau ${left}s</span>`:`Đang ghi · ${fmt(recSec)} / tối đa ${fmt(DEMO_MAX)}`;}
+function toggleRec(){
+  if(recState==='recording'){stopRec('manual');return;}
+  if(recState!=='idle'&&recState!=='scored')return;
+  if(SIM==='A1'||SIM==='A2'){pushError(SIM);return;} // lỗi mic — chưa ghi được
+  startRec();
+}
+function startRec(){recState='recording';recSec=0;setMic();renderTimeline();updateRecLabel();
+  recTimer=setInterval(()=>{recSec++;if(recSec>=DEMO_MAX){stopRec('auto');return;}updateRecLabel();},1000);
+}
+function stopRec(reason){
+  clearInterval(recTimer);
+  if(SIM==='B1'||(reason==='manual'&&recSec<3)){pushError('B1');return;} // quá ngắn — không chấm
+  recState='processing';setMic();renderTimeline();
+  const auto=reason==='auto';
+  setTimeout(()=>{ // sau /assessments
+    if(['B2','B3','B5','C1'].includes(SIM)){pushError(SIM);return;}
+    recState='scored';
+    const prevResults=attempts.filter(x=>x.type==='result'&&x.scores);
+    const prevScores=prevResults.length?prevResults[prevResults.length-1].scores:null;
+    const scores=SCORE_SEQ[prevResults.length%SCORE_SEQ.length];
+    attempts.forEach(x=>{x.expanded=false;}); // lượt mới xuất hiện → tự thu gọn các lượt cũ
+    attempts.push({id:attempts.length+1,type:'result',corr:'pending',expanded:true,autoStopped:auto,scores,prevScores});
+    setMic();renderTimeline();
+    setTimeout(()=>{const a=attempts[attempts.length-1];if(a){a.corr='completed';renderTimeline();}},2000);
+  },1800);
+}
+function pushError(key){recState='idle';attempts.push({id:attempts.length+1,type:'error',errKey:key,recSec});setMic();renderTimeline();}
+function retryRecord(){resetRecState();renderTimeline();const tl=document.getElementById('timeline');if(tl)tl.scrollTop=tl.scrollHeight;}
+function micHelp(){alert('Cách cấp quyền micro:\n1. Bấm biểu tượng 🔒 (hoặc 🎙️) bên trái thanh địa chỉ.\n2. Tìm mục "Micro" → chọn "Cho phép".\n3. Tải lại trang nếu cần, rồi bấm "Thử lại".');}
+
+const ERR={
+  A1:{icon:'mic-off',tone:'rose',heading:'Chưa truy cập được micro',msg:'Trình duyệt đang chặn micro. Hãy cấp quyền micro cho 9speak rồi thử lại.',tip:'Mẹo: bấm biểu tượng 🔒 trên thanh địa chỉ → Cho phép Micro.',actions:[{label:'Hướng dẫn cấp quyền',primary:true,act:'micHelp()'},{label:'Thử lại',act:'retryRecord()'}]},
+  A2:{icon:'mic-off',tone:'rose',heading:'Không tìm thấy micro',msg:'Thiết bị chưa có micro hoặc trình duyệt không hỗ trợ ghi âm. Kiểm tra micro hoặc dùng Chrome/Safari mới nhất.',actions:[{label:'Thử lại',primary:true,act:'retryRecord()'}]},
+  B1:{icon:'timer',tone:'amber',heading:'Đoạn ghi quá ngắn',msg:'',actions:[{label:'Ghi âm lại',primary:true,act:'retryRecord()'}]},
+  B2:{icon:'volume-x',tone:'slate',heading:'Không nghe thấy giọng nói',msg:'AI không phát hiện được giọng nói. Kiểm tra micro, nói to & rõ hơn rồi thử lại.',actions:[{label:'Ghi âm lại',primary:true,act:'retryRecord()'}]},
+  B3:{icon:'alert-triangle',tone:'amber',heading:'Âm thanh bị nhiễu',msg:'Nhiều tạp âm nền khiến AI khó nhận diện. Hãy đến nơi yên tĩnh và thử lại.',actions:[{label:'Ghi âm lại',primary:true,act:'retryRecord()'}]},
+  B5:{icon:'languages',tone:'indigo',heading:'Có vẻ bạn chưa nói tiếng Anh',msg:'AI nhận diện câu trả lời không phải tiếng Anh nên chưa thể chấm. Hãy trả lời bằng tiếng Anh và thử lại.',actions:[{label:'Ghi âm lại',primary:true,act:'retryRecord()'}]},
+  C1:{icon:'target',tone:'amber',heading:'Câu trả lời có vẻ lệch đề',msg:'Nội dung chưa khớp với câu hỏi. Hãy xem lại đề bài và trả lời sát hơn rồi thử lại.',actions:[{label:'Ghi âm lại',primary:true,act:'retryRecord()'}]},
+};
+const ERR_TONE={rose:{bg:'bg-rose-50/50',bd:'border-rose-200',ib:'bg-rose-100',ifg:'text-rose-600',hf:'text-rose-900',mf:'text-rose-800'},amber:{bg:'bg-amber-50/50',bd:'border-amber-200',ib:'bg-amber-100',ifg:'text-amber-700',hf:'text-amber-900',mf:'text-amber-800'},slate:{bg:'bg-slate-50',bd:'border-slate-200',ib:'bg-slate-200',ifg:'text-slate-600',hf:'text-slate-900',mf:'text-slate-600'},indigo:{bg:'bg-indigo-50/50',bd:'border-indigo-200',ib:'bg-indigo-100',ifg:'text-indigo-600',hf:'text-indigo-900',mf:'text-indigo-800'}};
+function errorCard(a){
+  const e=ERR[a.errKey],t=ERR_TONE[e.tone];
+  const msg=a.errKey==='B1'?`Câu trả lời chỉ dài ${a.recSec||0}s. Hãy nói ít nhất 3 giây để AI chấm điểm chính xác.`:e.msg;
+  return `<div class="overflow-hidden rounded-xl border ${t.bd} ${t.bg} shadow-sm"><div class="flex items-start gap-2 p-3">
+    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${t.ib} ${t.ifg}"><i data-lucide="${e.icon}" class="h-5 w-5"></i></div>
+    <div class="flex-1"><div class="text-[13px] font-semibold ${t.hf}">${e.heading}</div>
+      <p class="mt-1 text-[13px] leading-6 ${t.mf}">${msg}</p>
+      ${e.tip?`<p class="mt-2 text-[12px] ${t.mf} opacity-80">${e.tip}</p>`:''}
+      <div class="mt-4 flex flex-wrap gap-2">${e.actions.map(ac=>`<button onclick="${ac.act}" class="rounded-lg px-4 py-2 text-sm font-medium ${ac.primary?'bg-blue-600 text-white hover:bg-blue-700':'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}">${ac.label}</button>`).join('')}</div>
+    </div></div></div>`;
+}
+// C1 — Off-topic: card riêng, căn giữa, vẫn hiện transcript user ở bong bóng phía trên
+function offTopicCard(){
+  const q=curTopic.questions[curQ]||'';
+  return `<div class="rounded-xl border border-indigo-100 bg-white px-6 py-5 text-center shadow-sm">
+    <div class="text-sm font-bold text-amber-500">Off-Topic: Đọc kỹ câu hỏi nha</div>
+    <p class="mx-auto mt-3 max-w-md text-[13px] leading-6 text-slate-600">Câu trả lời đang nói về <b>${OFFTOPIC_SUBJECT}</b>, không liên quan đến câu hỏi: <i>“${q.split('\\n')[0]}”</i>. Hãy đọc kỹ đề và trả lời đúng trọng tâm rồi bấm 🎙️ để ghi âm lại nhé.</p>
+  </div>`;
+}
+
+/* ===== PHÁT ÂM: card phân tích (ảnh 1) + panel luyện âm từng từ (ảnh 2) ===== */
+function pronTranscript(){
+  let out='';
+  PRON_TOKENS.forEach((tk,idx)=>{
+    if(tk.p){out+=tk.p;return;}
+    const sp=idx===0?'':' ';const w=tk.t;
+    if(tk.lvl==='ok'){out+=sp+`<span class="text-slate-700">${w}</span>`;return;}
+    if(tk.lvl==='minor'){out+=sp+`<span onclick="openPronDrill('${w}')" class="cursor-pointer text-slate-400" style="border-bottom:2px dotted #cbd5e1">${w}</span>`;return;}
+    if(tk.lvl==='light'){const i=w.toLowerCase().lastIndexOf(tk.yellow);const pre=w.slice(0,i),mid=w.slice(i,i+tk.yellow.length),post=w.slice(i+tk.yellow.length);
+      out+=sp+`<span onclick="openPronDrill('${w}')" class="cursor-pointer" style="border-bottom:2px dotted #cbd5e1"><span class="text-slate-400">${pre}</span><span class="font-bold text-amber-500">${mid}</span><span class="text-slate-400">${post}</span></span>`;return;}
+    // severe
+    out+=sp+`<span onclick="openPronDrill('${w}')" class="cursor-pointer font-semibold text-rose-400">${w}</span> <span class="rounded-md px-1.5 py-0.5 align-middle text-[12.5px] font-medium tracking-wide" style="background:#dcfce7;color:#166534">/${tk.ipa}/</span>`;
+  });
+  return out;
+}
+// ===== PHÁT ÂM (expert): dữ liệu =====
+const PRON_MISTAKES=[
+ {word:'a',count:2,score:14,correct:'eɪ',you:'ʌ',ctx:'be <b>a</b> small'},
+ {word:'to',count:1,score:22,correct:'tuː',you:'tə',ctx:'place <b>to</b> stay'},
+ {word:'and',count:4,score:38,correct:'ænd',you:'ɛnd',ctx:'kitchen <b>and</b> a'},
+ {word:'I',count:1,score:40,correct:'aɪ',you:'ɑː',ctx:'<b>I</b> think a'},
+ {word:'because',count:1,score:47,correct:'bɪˈkɒz',you:'bɪˈkɑːz',ctx:'sister <b>because</b> I'},
+ {word:'the',count:1,score:50,correct:'ðə',you:'dɛ',ctx:'in <b>the</b> countryside'},
+ {word:'room',count:1,score:58,correct:'ruːm',you:'rʊm',ctx:'living <b>room</b> with'},
+ {word:'comfortable',count:1,score:60,correct:'ˈkʌmftəbl',you:'kəmˈfɔːtəbl',ctx:'but <b>comfortable</b>'},
+];
+const PRON_SOUNDS=[
+ {sound:'/ð/ /θ/ — âm "th"',tip:'Đặt đầu lưỡi giữa hai hàm răng, cho hơi thoát ra; tránh thay bằng /d/ hoặc /s/.',words:['the']},
+ {sound:'Nguyên âm /æ/',tip:'Mở miệng rộng, hạ hàm (như "cat"); tránh thành /e/ hay /ʌ/.',words:['and','a']},
+ {sound:'Âm cuối /t/ /d/',tip:'Bật âm cuối rõ ràng, đừng nuốt mất — giúp người nghe dễ hiểu hơn.',words:['room']},
+];
+const PRON_PROSODY={
+ stress:[{word:'comfortable',correct:'COM·fort·a·ble',you:'com·FOR·ta·ble'},{word:'because',correct:'be·CAUSE',you:'BE·cause'}],
+ rhythm:'Nhịp nói khá đều nhưng trọng âm câu chưa nổi bật — nên nhấn vào từ khoá (place, small, garden).',
+ intonation:'Ngữ điệu hơi phẳng ở cuối câu khẳng định; thử lên–xuống tự nhiên hơn để truyền cảm xúc.',
+};
+const PRON_BAND_TOKENS=[
+ {t:'Well,'},{t:'my'},{t:'ideal'},{t:'place'},{t:'to',b:'needs'},{t:'stay'},{t:'would'},{t:'be'},{t:'a',b:'needs'},{t:'small'},{t:'house'},{t:'in'},{t:'the',b:'fair'},{t:'countryside.'},
+ {t:'The'},{t:'house'},{t:'would'},{t:'be'},{t:'simple'},{t:'but'},{t:'comfortable,',b:'fair'},{t:'with'},{t:'a',b:'needs'},{t:'small'},{t:'kitchen'},{t:'and',b:'needs'},{t:'a',b:'needs'},{t:'living'},{t:'room.',b:'fair'},
+];
+function pronScoreColor(s){return s<50?'#e11d48':s<75?'#d97706':'#059669';}
+function pronScoreBg(s){return s<50?'#ffe4e6':s<75?'#fef3c7':'#dcfce7';}
+function pronDist(){let good=0,fair=0,needs=0;PRON_BAND_TOKENS.forEach(t=>{if(t.b==='needs')needs++;else if(t.b==='fair')fair++;else good++;});const tot=PRON_BAND_TOKENS.length;return{good:Math.round(good/tot*100),fair:Math.round(fair/tot*100),needs:Math.round(needs/tot*100)};}
+function bandTranscript(){return PRON_BAND_TOKENS.map(t=>{const w=t.t,bare=w.replace(/[^a-zA-Z]/g,'');if(!t.b)return `<span class="text-slate-700">${w}</span>`;const bg=t.b==='needs'?'#ffe4e6':'#fef3c7',cl=t.b==='needs'?'#be123c':'#92400e';return `<span onclick="openPronDrill('${bare}')" class="cursor-pointer rounded px-1 font-medium" style="background:${bg};color:${cl}">${w}</span>`;}).join(' ');}
+function bandLegend(){return `<div class="mt-2 flex flex-wrap gap-3 text-[11px] text-slate-400"><span><span class="inline-block h-2.5 w-2.5 rounded align-middle bg-emerald-400"></span> Tốt ≥75%</span><span><span class="inline-block h-2.5 w-2.5 rounded align-middle bg-amber-300"></span> Khá 50–75%</span><span><span class="inline-block h-2.5 w-2.5 rounded align-middle bg-rose-300"></span> Cần cải thiện <50%</span></div>`;}
+function pronAudio(){return `<div class="mt-3 flex items-center gap-2"><button class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-teal-400 text-teal-500 hover:bg-teal-50"><i data-lucide="play" class="h-4 w-4 fill-current"></i></button><span class="text-xs tabular-nums text-slate-400">0:00</span><div class="relative h-1.5 flex-1 rounded-full bg-slate-200"><div class="absolute left-0 top-0 h-full w-2 rounded-full bg-teal-400"></div><div class="absolute -top-1 left-2 h-3.5 w-3.5 -translate-x-1/2 rounded-full border-2 border-white bg-sky-500 shadow"></div></div><span class="text-xs tabular-nums text-slate-400">0:24</span></div>`;}
+function mistakeCards(){return PRON_MISTAKES.map(m=>`<div class="rounded-xl border border-slate-200 p-3">
+   <div class="flex items-center justify-between"><b class="text-slate-800">"${m.word}"${m.count>1?` <span class="text-slate-400">×${m.count}</span>`:''}</b><span class="rounded-full px-2 py-0.5 text-[11px] font-bold" style="background:${pronScoreBg(m.score)};color:${pronScoreColor(m.score)}">${m.score}%</span></div>
+   <div class="mt-2 flex items-center justify-between text-[12px]"><span class="text-emerald-600">✓ Đúng: <span class="font-medium">/${m.correct}/</span></span><button title="Nghe âm chuẩn" class="text-emerald-500 hover:text-emerald-700"><i data-lucide="volume-2" class="h-3.5 w-3.5"></i></button></div>
+   <div class="mt-1 flex items-center justify-between text-[12px]"><span class="text-rose-500">✗ Bạn nói: <span class="font-medium">/${m.you}/</span></span><button title="Nghe lại đoạn bạn nói" class="text-rose-400 hover:text-rose-600"><i data-lucide="volume-2" class="h-3.5 w-3.5"></i></button></div>
+   <div class="mt-1.5 flex items-center justify-between gap-2"><span class="truncate text-[11px] italic text-slate-400">"${m.ctx}"</span><button onclick="openPronDrill('${m.word}')" class="shrink-0 rounded-md bg-violet-50 px-2 py-1 text-[11px] font-semibold text-violet-600 hover:bg-violet-100">Luyện ›</button></div>
+  </div>`).join('');}
+function soundCards(){return PRON_SOUNDS.map(s=>`<div class="rounded-xl border border-slate-200 p-3"><div class="flex items-center gap-2 text-[13px] font-bold text-slate-800"><i data-lucide="volume-2" class="h-4 w-4 text-violet-500"></i> ${s.sound}</div><p class="mt-1 text-[12px] leading-5 text-slate-500">${s.tip}</p><div class="mt-2 flex flex-wrap gap-1.5">${s.words.map(w=>`<button onclick="openPronDrill('${w}')" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-200">${w}</button>`).join('')}</div></div>`).join('');}
+function prosodyBlock(){return `<div class="space-y-2">
+   ${PRON_PROSODY.stress.map(s=>`<div class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[12px]"><span class="font-semibold text-slate-700">${s.word}</span><span class="text-slate-500">✓ <b class="text-emerald-600">${s.correct}</b> · ✗ <span class="text-rose-500">${s.you}</span></span></div>`).join('')}
+   <p class="text-[12px] leading-6 text-slate-500"><b class="text-slate-700">Nhịp:</b> ${PRON_PROSODY.rhythm}</p>
+   <p class="text-[12px] leading-6 text-slate-500"><b class="text-slate-700">Ngữ điệu:</b> ${PRON_PROSODY.intonation}</p>
+  </div>`;}
+// rail (gọn)
+function pronCard(c,it){
+  const d=pronDist(),top=PRON_MISTAKES.slice(0,3);
+  return `<div class="rounded-xl border bg-white p-3 shadow-sm" style="border-color:${c.text}33">
+    <div class="flex items-start justify-between"><div class="flex items-center gap-2 text-sm font-semibold" style="color:${c.labelTone}"><span class="h-2.5 w-2.5 rounded-full" style="background:${c.text}"></span> Phân tích · ${c.label}</div>
+      <div class="flex items-center gap-1.5"><button onclick="openPronModal()" class="rounded-md border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-500 hover:bg-slate-50">⛶ Bản đầy đủ</button><button onclick="railRemove('${it}')" class="text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-4 w-4"></i></button></div></div>
+    <div class="mt-1 text-xs" style="color:${c.text}">Điểm tiêu chí: <b>${c.score.toFixed(1)}</b></div>
+    <div class="mt-3 flex gap-1.5 text-[11px] font-semibold">
+      <span class="flex-1 rounded-md bg-emerald-50 px-2 py-1 text-center text-emerald-700">Tốt ${d.good}%</span>
+      <span class="flex-1 rounded-md bg-amber-50 px-2 py-1 text-center text-amber-700">Khá ${d.fair}%</span>
+      <span class="flex-1 rounded-md bg-rose-50 px-2 py-1 text-center text-rose-700">Yếu ${d.needs}%</span>
+    </div>
+    <div class="mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Từ cần sửa nhất</div>
+    <div class="mt-1 space-y-1">${top.map(m=>`<div class="flex items-center justify-between text-[12px]"><button onclick="openPronDrill('${m.word}')" class="font-medium text-slate-700 hover:text-violet-600">"${m.word}"${m.count>1?` ×${m.count}`:''}</button><span class="font-semibold" style="color:${pronScoreColor(m.score)}">${m.score}%</span></div>`).join('')}</div>
+    <div class="mt-3 rounded-lg bg-violet-50 px-3 py-2 text-[12px] text-violet-700"><b>Âm yếu nhất:</b> ${PRON_SOUNDS[0].sound}</div>
+    <button onclick="openPronModal()" class="mt-3 w-full rounded-md border border-slate-200 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">Xem lỗi, nhóm âm & ngữ điệu ›</button>
+  </div>`;
+}
+// panel rộng (2 cột)
+function openPronModal(){
+  document.getElementById('pronModal').innerHTML=`
+    <button onclick="closePronModal()" class="absolute right-4 top-4 text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-5 w-5"></i></button>
+    <div class="mb-4 flex items-center gap-2 text-base font-bold text-slate-800"><span class="h-2.5 w-2.5 rounded-full bg-[#7c3aed]"></span> Phân tích · Phát âm <span class="text-sm font-normal text-slate-400">· 6.5</span></div>
+    <div class="grid gap-5 md:grid-cols-2">
+      <div>
+        <div class="mb-2 text-sm font-bold text-slate-800">Câu trả lời theo độ chuẩn</div>
+        <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-3 text-[14px] leading-[2.2] text-slate-700">${bandTranscript()}</div>
+        ${pronAudio()}
+        ${bandLegend()}
+      </div>
+      <div class="space-y-4">
+        <div><div class="mb-2 text-sm font-bold text-slate-800">Lỗi phát âm <span class="text-[11px] font-normal text-slate-400">(nặng → nhẹ)</span></div><div class="grid grid-cols-1 gap-2 sm:grid-cols-2">${mistakeCards()}</div></div>
+        <div><div class="mb-2 flex items-center gap-1.5 text-sm font-bold text-slate-800">Nhóm theo âm <span class="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-600">sửa gốc rễ</span></div><div class="space-y-2">${soundCards()}</div></div>
+        <div><div class="mb-2 text-sm font-bold text-slate-800">Trọng âm & Ngữ điệu</div>${prosodyBlock()}</div>
+      </div>
+    </div>`;
+  document.getElementById('pronScrim').classList.remove('hidden');
+  document.getElementById('pronModal').classList.remove('hidden');
+  icons();
+}
+function closePronModal(){document.getElementById('pronScrim').classList.add('hidden');document.getElementById('pronModal').classList.add('hidden');}
+function openPronDrill(word){
+  const d=pronWordData(word);
+  const modelRow=d.model.map(p=>`<span class="text-slate-400">${p}</span>`).join('<span class="w-1"></span>');
+  const youRow=d.you.map(([p,st])=>`<span class="${st==='ok'?'text-emerald-500':'text-amber-500'}">${p}</span>`).join('<span class="w-1"></span>');
+  document.getElementById('drillModal').innerHTML=`
+    <button onclick="closeDrill()" class="absolute right-4 top-4 text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-5 w-5"></i></button>
+    <div class="text-center text-sm text-slate-400">Luyện phát âm</div>
+    <div class="mt-2 flex items-center justify-center gap-2">
+      <button class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-teal-400 text-teal-500 hover:bg-teal-50"><i data-lucide="play" class="h-5 w-5 fill-current"></i></button>
+      <div class="text-xl font-bold text-slate-800">${word}</div>
+    </div>
+    <div class="mt-2 text-center text-sm tracking-[0.3em] text-slate-500">/ ${d.model.join(' ')} /</div>
+    <div class="mt-1 flex items-center justify-center gap-1.5 text-slate-500">${d.meaning}<i data-lucide="check-circle-2" class="h-4 w-4 text-slate-300"></i></div>
+    <hr class="my-5 border-slate-100">
+    <div class="rounded-xl bg-slate-50 p-3">
+      <div class="text-center text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Lỗi của bạn</div>
+      <div class="mt-4 flex items-center gap-4"><span class="w-12 shrink-0 text-right text-xs font-semibold uppercase text-slate-300">Mẫu</span><div class="flex items-center gap-2 text-base font-semibold">${modelRow}</div></div>
+      <div class="mt-2 flex items-center gap-4"><span class="w-12 shrink-0 text-right text-xs font-semibold uppercase text-slate-300">Bạn</span><div class="flex items-center gap-2 text-base font-bold">${youRow}</div></div>
+      <div class="mt-4 rounded-xl border-l-4 border-indigo-500 bg-indigo-50/70 p-3">
+        <div class="flex flex-wrap items-center gap-2 font-bold text-indigo-700"><span>🗣️ Hướng dẫn luyện âm</span><span class="rounded-md bg-indigo-100 px-2 py-0.5 text-indigo-700">${d.target} 👉</span></div>
+        <p class="mt-2 text-[13px] font-semibold leading-6 text-slate-800">${d.guide}</p>
+        ${d.more?`<p class="mt-1.5 line-clamp-2 text-[13px] leading-6 text-slate-500">↓ ${d.more}</p><button class="mt-1 text-sm font-medium text-indigo-600 hover:underline">xem thêm</button>`:''}
+      </div>
+    </div>
+    <p class="mt-5 text-center text-slate-500">Nhấn nút <b class="text-indigo-600">Ghi âm ngay</b> ở dưới để luyện phát âm nha</p>
+    <div class="mt-5 flex justify-end"><button onclick="closeDrill()" class="rounded-full bg-indigo-600 px-7 py-2 font-semibold text-white shadow-lg hover:bg-indigo-700">Ghi âm ngay</button></div>`;
+  document.getElementById('drillScrim').classList.remove('hidden');
+  document.getElementById('drillModal').classList.remove('hidden');
+  icons();
+}
+function closeDrill(){document.getElementById('drillScrim').classList.add('hidden');document.getElementById('drillModal').classList.add('hidden');}
+
+/* ===== TRÔI CHẢY & MẠCH LẠC: phân tích chi tiết ===== */
+const FLU={wpm:102,badge:'Ngắt nghỉ hơi dài',coherenceBadge:'Tròn ý nhưng chưa sâu',coherenceNote:'Cần đào sâu một ý với ví dụ cụ thể, tránh chỉ liệt kê chung chung.',linkers:['and','whenever'],linkerSuggest:'besides, as a result, for instance'};
+const FLU_TOKENS=[
+ {t:'My'},{t:'hometown'},{t:'is'},{t:'a'},{t:'small'},{t:'town'},{t:'near'},{t:'Hanoi.',p:'good'},
+ {t:'I'},{t:'really'},{t:'enjoy'},{t:'the'},{t:'peaceful'},{t:'atmosphere',p:'med'},
+ {t:'and'},{t:'the'},{t:'friendly'},{t:'people'},{t:'there.',p:'good'},
+ {t:'Whenever'},{t:'I'},{t:'go',p:'long'},{t:'back,'},{t:'I'},{t:'can'},{t:'finally'},{t:'relax',p:'med'},
+ {t:'and'},{t:'forget'},{t:'about'},{t:'work',filler:'uhm'},{t:'in'},{t:'the'},{t:'city.',p:'good'},
+];
+function pauseMark(p){const col=p==='good'?'#22c55e':p==='med'?'#f59e0b':'#ef4444';const w=p==='long'?'20px':p==='med'?'14px':'9px';return ` <span class="inline-block align-middle rounded-full" style="width:${w};height:8px;background:${col}"></span>`;}
+function pauseTranscript(){return FLU_TOKENS.map(tk=>{let s=tk.t;if(tk.filler)s+=` <span class="rounded bg-rose-500 px-1 align-middle text-[10px] font-bold text-white">${tk.filler}</span>`;if(tk.p)s+=pauseMark(tk.p);return s;}).join(' ');}
+function pauseCounts(){const g=FLU_TOKENS.filter(t=>t.p==='good').length,m=FLU_TOKENS.filter(t=>t.p==='med').length,l=FLU_TOKENS.filter(t=>t.p==='long').length,f=FLU_TOKENS.filter(t=>t.filler).length;return `<div class="flex flex-wrap gap-1.5 text-[11px]"><span class="rounded-md bg-emerald-50 px-2 py-1 font-semibold text-emerald-700">🟢 ${g} ngắt tốt</span><span class="rounded-md bg-amber-50 px-2 py-1 font-semibold text-amber-700">🟡 ${m} ngắt vừa</span><span class="rounded-md bg-rose-50 px-2 py-1 font-semibold text-rose-700">🔴 ${l} ngắt dài</span><span class="rounded-md bg-slate-100 px-2 py-1 font-semibold text-slate-600">${f} filler</span></div>`;}
+function speedGauge(){const wpm=FLU.wpm;const pct=Math.max(2,Math.min(98,(wpm-60)/140*100));const ticks=[60,90,120,150,180,200].map(t=>`<span class="absolute -translate-x-1/2" style="left:${(t-60)/140*100}%">${t}</span>`).join('');
+  return `<div class="rounded-xl border border-slate-200 p-3">
+    <div class="flex items-center justify-between"><div class="flex items-center gap-2 text-sm font-semibold text-slate-800"><i data-lucide="zap" class="h-4 w-4 text-amber-500"></i> Tốc độ nói</div><div class="text-lg font-bold text-indigo-600">${wpm}<span class="ml-1 text-[11px] font-normal text-slate-400">từ/phút</span></div></div>
+    <div class="relative mt-4 mb-1 h-3 text-[9px] text-slate-400">${ticks}</div>
+    <div class="relative h-2.5 rounded-full" style="background:linear-gradient(90deg,#ef4444 0%,#f59e0b 22%,#22c55e 43%,#22c55e 64%,#f59e0b 82%,#ef4444 100%)"><div class="absolute top-1/2 h-5 w-1 -translate-x-1/2 -translate-y-1/2 rounded bg-slate-900" style="left:${pct}%"></div></div>
+    <div class="mt-1.5 flex justify-between text-[10px] font-semibold"><span class="text-rose-500">Chậm</span><span class="text-emerald-600">Tốt 120–150</span><span class="text-rose-500">Nhanh</span></div>
+    <p class="mt-2 text-[11px] text-slate-400">Giám khảo thích nhịp ~120–150 từ/phút — bạn đang hơi chậm.</p>
+  </div>`;}
+function fluAudio(){return `<div class="mt-3 flex items-center gap-3"><button class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-teal-400 text-teal-500 hover:bg-teal-50"><i data-lucide="play" class="h-4 w-4 fill-current"></i></button><span class="text-xs tabular-nums text-slate-400">0:00</span><div class="relative h-1.5 flex-1 rounded-full bg-slate-200"><div class="absolute left-0 top-0 h-full w-2 rounded-full bg-teal-400"></div><div class="absolute -top-1 left-2 h-3.5 w-3.5 -translate-x-1/2 rounded-full border-2 border-white bg-sky-500 shadow"></div></div><span class="text-xs tabular-nums text-slate-400">0:32</span></div>`;}
+function fluTranscriptBox(){return `<div class="rounded-xl border border-slate-100 bg-slate-50/50 p-3 text-[13px] leading-[2.2] text-slate-700">${pauseTranscript()}</div>`;}
+function fluLegend(){return `<div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-slate-400"><span><span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 align-middle"></span> ngắt tốt</span><span><span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-500 align-middle"></span> ngắt vừa</span><span><span class="inline-block h-2.5 w-2.5 rounded-full bg-rose-500 align-middle"></span> ngắt dài</span><span><span class="rounded bg-rose-500 px-1 text-[9px] font-bold text-white">uhm</span> filler</span></div>`;}
+function coherenceBlock(){return `<div class="flex items-center justify-between gap-2"><div class="text-sm font-bold text-slate-800">Mạch lạc <span class="text-[11px] font-normal text-slate-400">(coherence)</span></div><span class="rounded-full bg-teal-100 px-2.5 py-1 text-[11px] font-bold text-teal-700">${FLU.coherenceBadge}</span></div>
+  <p class="mt-1 text-[12px] leading-5 text-slate-500">${FLU.coherenceNote}</p>
+  <div class="mt-2 text-[11px] leading-5 text-slate-500">Liên từ đã dùng: ${FLU.linkers.map(w=>`<span class="rounded bg-indigo-50 px-1.5 py-0.5 font-medium text-indigo-600">${w}</span>`).join(' ')} · Gợi ý thêm: <span class="text-slate-600">${FLU.linkerSuggest}</span></div>`;}
+function fluencyHead(){return `<div class="flex items-center justify-between gap-2"><div class="text-sm font-bold text-slate-800">Trôi chảy <span class="text-[11px] font-normal text-slate-400">(fluency)</span></div><span class="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-white">${FLU.badge}</span></div>`;}
+function speedLabel(wpm){
+  if(wpm<90)return{text:'quá chậm',color:'#e11d48'};
+  if(wpm<120)return{text:'hơi chậm',color:'#d97706'};
+  if(wpm<=150)return{text:'tốt',color:'#059669'};
+  if(wpm<=170)return{text:'hơi nhanh',color:'#d97706'};
+  return{text:'quá nhanh',color:'#e11d48'};
+}
+// bản trong cột AI hỗ trợ (DỌC, GỌN — chỉ key chính)
+function fluencyCard(c,it){
+  const sl=speedLabel(FLU.wpm);
+  return `<div class="rounded-xl border bg-white p-3 shadow-sm" style="border-color:${c.text}33">
+    <div class="flex items-start justify-between"><div class="flex items-center gap-2 text-sm font-semibold" style="color:${c.labelTone}"><span class="h-2.5 w-2.5 rounded-full" style="background:${c.text}"></span> Phân tích · ${c.label}</div>
+      <div class="flex items-center gap-1.5"><button onclick="openFluModal()" class="rounded-md border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-500 hover:bg-slate-50">⛶ Bản đầy đủ</button><button onclick="railRemove('${it}')" class="text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-4 w-4"></i></button></div></div>
+    <div class="mt-1 text-xs" style="color:${c.text}">Điểm tiêu chí: <b>${c.score.toFixed(1)}</b></div>
+    <div class="mt-3 flex items-center justify-between gap-2"><span class="text-[12px] font-semibold text-slate-700">Mạch lạc</span><span class="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-bold text-teal-700">${FLU.coherenceBadge}</span></div>
+    <p class="mt-1 text-[11px] leading-5 text-slate-500">${FLU.coherenceNote}</p>
+    <div class="mt-3 flex items-center justify-between gap-2"><span class="text-[12px] font-semibold text-slate-700">Trôi chảy</span><span class="rounded-full bg-slate-800 px-2 py-0.5 text-[11px] font-bold text-white">${FLU.badge}</span></div>
+    <div class="mt-2 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-[12px]"><span class="flex items-center gap-1.5 font-medium text-slate-600"><i data-lucide="zap" class="h-3.5 w-3.5 text-amber-500"></i> Tốc độ nói</span><span><b class="text-indigo-600">${FLU.wpm}</b> từ/phút · <span class="font-semibold" style="color:${sl.color}">${sl.text}</span></span></div>
+    <div class="mt-2">${pauseCounts()}</div>
+    <button onclick="openFluModal()" class="mt-3 w-full rounded-md border border-slate-200 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">Xem transcript ngắt nghỉ & nghe lại ›</button>
+  </div>`;
+}
+// bản panel rộng (kiểu ảnh 3, 2 cột)
+function openFluModal(){
+  document.getElementById('fluModal').innerHTML=`
+    <button onclick="closeFluModal()" class="absolute right-4 top-4 text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-5 w-5"></i></button>
+    <div class="mb-4 flex items-center gap-2 text-base font-bold text-slate-800"><span class="h-2.5 w-2.5 rounded-full bg-[#2563eb]"></span> Phân tích · Trôi chảy & Mạch lạc <span class="text-sm font-normal text-slate-400">· 6.5</span></div>
+    <div class="grid gap-5 md:grid-cols-2">
+      <div>${fluencyHead()}<div class="mt-3">${fluTranscriptBox()}</div>${fluAudio()}<div class="mt-3">${pauseCounts()}</div>${fluLegend()}</div>
+      <div class="space-y-4">${speedGauge()}<div class="rounded-xl border border-slate-200 p-3">${coherenceBlock()}</div></div>
+    </div>`;
+  document.getElementById('fluScrim').classList.remove('hidden');
+  document.getElementById('fluModal').classList.remove('hidden');
+  icons();
+}
+function closeFluModal(){document.getElementById('fluScrim').classList.add('hidden');document.getElementById('fluModal').classList.add('hidden');}
+
+/* ===== TỪ VỰNG: phân tích chi tiết (CEFR + nâng cấp) ===== */
+const CEFR_COLORS={A1:'#64748b',A2:'#22c55e',B1:'#3b82f6',B2:'#f59e0b',C1:'#f97316',C2:'#ef4444'};
+const VOC={score:6.0,badge:'Chủ yếu A1–B1',note:'Đa số là từ cơ bản — thêm từ B2+ và collocation chuyên đề để nâng band Từ vựng.',
+  cefr:{A1:40,A2:22,B1:24,B2:10,C1:4,C2:0},
+  tips:[
+    {word:'small',alts:['tiny','compact','modest']},
+    {word:'really',alts:['genuinely','truly','thoroughly']},
+    {word:'peaceful',alts:['tranquil','serene','idyllic']},
+    {word:'relax',alts:['unwind','de-stress','recharge']},
+  ]};
+const VOC_TOKENS=[
+ ['My','A1'],['hometown','B1'],['is','A1'],['a','A1'],['small','A1'],['town','A1'],['near','A1'],['Hanoi.','A1'],
+ ['I','A1'],['really','A1'],['enjoy','A2'],['the','A1'],['peaceful','B2'],['atmosphere','B2'],['and','A1'],['the','A1'],['friendly','A2'],['people','A1'],['there.','A1'],
+ ['Whenever','B1'],['I','A1'],['go','A1'],['back,','A1'],['I','A1'],['can','A1'],['finally','B1'],['relax','B1'],['and','A1'],['forget','A2'],['about','A1'],['work','A1'],['in','A1'],['the','A1'],['city.','A1'],
+];
+function cefrBars(){return `<div class="space-y-2">`+Object.keys(VOC.cefr).map(lv=>{const pct=VOC.cefr[lv],col=CEFR_COLORS[lv];
+  return `<div class="flex items-center gap-2"><span class="w-7 shrink-0 rounded px-1 py-0.5 text-center text-[10px] font-bold text-white" style="background:${col}">${lv}</span><div class="h-2 flex-1 rounded-full bg-slate-100"><div class="h-full rounded-full" style="width:${pct}%;background:${col}"></div></div><span class="w-9 shrink-0 text-right text-[11px] font-semibold text-slate-500">${pct}%</span></div>`;}).join('')+`</div>`;}
+function vocTranscript(){return VOC_TOKENS.map(([w,lv])=>{const col=lv==='A1'?'#334155':CEFR_COLORS[lv];const ul=lv!=='A1'?`border-bottom:2px solid ${col};`:'';return `<span title="Cấp độ ${lv}" class="${lv!=='A1'?'font-medium':''}" style="color:${col};${ul}">${w}</span>`;}).join(' ');}
+function cefrLegend(){return `<div class="flex flex-wrap gap-2.5 text-[11px] text-slate-500">`+Object.keys(CEFR_COLORS).map(lv=>`<span><span class="inline-block h-2.5 w-2.5 rounded-full align-middle" style="background:${CEFR_COLORS[lv]}"></span> ${lv}</span>`).join('')+`</div>`;}
+function vocTips(){return VOC.tips.map(t=>`<div class="rounded-xl border border-slate-200 p-3"><div class="text-sm font-bold capitalize text-slate-800">${t.word}</div><div class="mt-0.5 text-[11px] text-slate-400">Thử dùng:</div><div class="mt-1.5 flex flex-wrap gap-1.5">${t.alts.map(a=>`<span class="rounded-full bg-indigo-50 px-2.5 py-1 text-[12px] font-medium text-indigo-600">${a}</span>`).join('')}</div></div>`).join('');}
+// rail (gọn — key chính)
+function vocabCard(c,it){
+  const topTips=VOC.tips.slice(0,2).map(t=>`<div class="text-[12px] text-slate-600"><b class="capitalize text-slate-800">${t.word}</b> → <span class="text-indigo-600">${t.alts.slice(0,2).join(', ')}</span></div>`).join('');
+  return `<div class="rounded-xl border bg-white p-3 shadow-sm" style="border-color:${c.text}33">
+    <div class="flex items-start justify-between"><div class="flex items-center gap-2 text-sm font-semibold" style="color:${c.labelTone}"><span class="h-2.5 w-2.5 rounded-full" style="background:${c.text}"></span> Phân tích · ${c.label}</div>
+      <div class="flex items-center gap-1.5"><button onclick="openVocModal()" class="rounded-md border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-500 hover:bg-slate-50">⛶ Bản đầy đủ</button><button onclick="railRemove('${it}')" class="text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-4 w-4"></i></button></div></div>
+    <div class="mt-1 text-xs" style="color:${c.text}">Điểm tiêu chí: <b>${c.score.toFixed(1)}</b></div>
+    <div class="mt-3 flex items-center justify-between gap-2"><span class="text-[12px] font-semibold text-slate-700">Cấp độ từ vựng</span><span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">${VOC.badge}</span></div>
+    <div class="mt-2">${cefrBars()}</div>
+    <p class="mt-2 text-[11px] leading-5 text-slate-500">${VOC.note}</p>
+    <div class="mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Gợi ý nâng cấp</div>
+    <div class="mt-1 space-y-1">${topTips}</div>
+    <button onclick="openVocModal()" class="mt-3 w-full rounded-md border border-slate-200 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">Xem từ theo cấp độ & gợi ý đầy đủ ›</button>
+  </div>`;
+}
+// panel rộng (đầy đủ, 2 cột như ảnh)
+function openVocModal(){
+  document.getElementById('vocModal').innerHTML=`
+    <button onclick="closeVocModal()" class="absolute right-4 top-4 text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-5 w-5"></i></button>
+    <div class="mb-4 flex items-center gap-2 text-base font-bold text-slate-800"><span class="h-2.5 w-2.5 rounded-full bg-[#059669]"></span> Phân tích · Từ vựng <span class="text-sm font-normal text-slate-400">· ${VOC.score.toFixed(1)}</span></div>
+    <div class="grid gap-5 md:grid-cols-2">
+      <div>
+        <div class="mb-2 text-sm font-bold text-slate-800">Câu trả lời theo cấp độ từ</div>
+        <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-3 text-[14px] leading-9">${vocTranscript()}</div>
+        <div class="mt-2">${cefrLegend()}</div>
+      </div>
+      <div class="space-y-4">
+        <div><div class="mb-2 text-sm font-bold text-slate-800">Phân bố cấp độ (CEFR)</div>${cefrBars()}<p class="mt-2 text-[11px] text-slate-500">${VOC.note}</p></div>
+        <div>
+          <div class="mb-2 text-sm font-bold text-slate-800">Gợi ý nâng cấp (paraphrase)</div>
+          <div class="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-[12px] font-medium text-amber-700">Dùng các từ gợi ý để nâng band Từ vựng.</div>
+          <div class="space-y-2">${vocTips()}</div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('vocScrim').classList.remove('hidden');
+  document.getElementById('vocModal').classList.remove('hidden');
+  icons();
+}
+function closeVocModal(){document.getElementById('vocScrim').classList.add('hidden');document.getElementById('vocModal').classList.add('hidden');}
+
+/* ===== NGỮ PHÁP: phân tích chi tiết (độ chính xác + độ đa dạng + cấu trúc) ===== */
+const GRAM={score:6.0,badge:'Cơ bản ổn — ít câu phức',
+  accurateSentences:3,totalSentences:4,
+  simplePct:65,complexPct:35,
+  errorTypes:[{label:'Thì động từ',count:2},{label:'Mạo từ (a/the)',count:1},{label:'Giới từ',count:1}],
+  structures:[
+    {name:'Mệnh đề quan hệ (who/which)',status:'ok'},
+    {name:'Câu điều kiện loại 1',status:'ok'},
+    {name:'Câu điều kiện loại 2',status:'fail'},
+    {name:'Câu bị động',status:'todo'},
+    {name:'Đảo ngữ / Cleft',status:'todo'},
+  ],
+  suggestions:[
+    {tip:'Thêm mệnh đề quan hệ',ex:'…the locals, who always greet you with a smile.'},
+    {tip:'Dùng câu điều kiện loại 2',ex:'If I had more time, I would visit more often.'},
+  ]};
+const GRAM_SENTENCES=[
+  {t:'My hometown is a small town near Hanoi.',ok:true,type:'simple'},
+  {t:'I really enjoy the peaceful atmosphere and the friendly people there.',ok:true,type:'complex'},
+  {t:'Whenever I go back, I can finally relax.',ok:true,type:'complex'},
+  {t:'It is the place where I grew up and make many memories.',ok:false,type:'complex'},
+];
+function gramAccuracy(){const a=GRAM.accurateSentences,t=GRAM.totalSentences,pct=Math.round(a/t*100);
+  return `<div><div class="flex items-center justify-between text-[12px]"><span class="font-medium text-slate-600">Câu không lỗi</span><span class="font-bold text-slate-800">${a}/${t} câu</span></div><div class="mt-1.5 h-2 rounded-full bg-slate-100"><div class="h-full rounded-full bg-emerald-500" style="width:${pct}%"></div></div></div>`;}
+function gramComplexity(){return `<div class="space-y-2">
+   <div class="flex items-center gap-2 text-[12px]"><span class="w-16 shrink-0 text-slate-600">Câu đơn</span><div class="h-2 flex-1 rounded-full bg-slate-100"><div class="h-full rounded-full bg-slate-400" style="width:${GRAM.simplePct}%"></div></div><span class="w-9 text-right font-semibold text-slate-500">${GRAM.simplePct}%</span></div>
+   <div class="flex items-center gap-2 text-[12px]"><span class="w-16 shrink-0 text-slate-600">Câu phức</span><div class="h-2 flex-1 rounded-full bg-slate-100"><div class="h-full rounded-full bg-indigo-500" style="width:${GRAM.complexPct}%"></div></div><span class="w-9 text-right font-semibold text-slate-500">${GRAM.complexPct}%</span></div>
+  </div>`;}
+function gramErrorTypes(){return `<div class="space-y-1.5">`+GRAM.errorTypes.map(e=>`<div class="flex items-center justify-between text-[12px]"><span class="text-slate-600">${e.label}</span><span class="rounded-md bg-rose-50 px-2 py-0.5 font-semibold text-rose-600">${e.count} lỗi</span></div>`).join('')+`</div>`;}
+function gramStructures(){const meta={ok:{i:'check-circle-2',c:'#059669',t:'Dùng đúng'},fail:{i:'alert-triangle',c:'#d97706',t:'Chưa đúng'},todo:{i:'lightbulb',c:'#94a3b8',t:'Nên thử'}};
+  return `<div class="space-y-1.5">`+GRAM.structures.map(s=>{const m=meta[s.status];return `<div class="flex items-center justify-between gap-2 text-[12px]"><span class="text-slate-700">${s.name}</span><span class="flex shrink-0 items-center gap-1 font-medium" style="color:${m.c}"><i data-lucide="${m.i}" class="h-3.5 w-3.5"></i> ${m.t}</span></div>`;}).join('')+`</div>`;}
+function gramSuggestions(){return GRAM.suggestions.map(s=>`<div class="rounded-xl border border-slate-200 p-3"><div class="text-[13px] font-bold text-slate-800">💡 ${s.tip}</div><p class="mt-1 text-[12px] italic leading-6 text-slate-500">“${s.ex}”</p></div>`).join('');}
+function gramSentences(){return `<div class="space-y-2">`+GRAM_SENTENCES.map(s=>{const col=s.ok?'#22c55e':'#f59e0b';const bd=s.type==='complex'?{t:'Câu phức',c:'#4f46e5',bg:'#eef2ff'}:{t:'Câu đơn',c:'#64748b',bg:'#f1f5f9'};
+  return `<div class="flex gap-2.5 rounded-lg border border-slate-100 bg-slate-50/50 p-2.5"><span class="w-1 shrink-0 rounded-full" style="background:${col}"></span><div class="flex-1"><p class="text-[13px] leading-6 text-slate-700">${s.t}</p><span class="mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold" style="color:${bd.c};background:${bd.bg}">${bd.t}</span></div><span class="shrink-0 text-[11px] font-medium" style="color:${col}">${s.ok?'Không lỗi':'Có lỗi'}</span></div>`;}).join('')+`</div>`;}
+function gramLegend(){return `<div class="mt-2 flex flex-wrap gap-3 text-[11px] text-slate-400"><span><span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 align-middle"></span> câu không lỗi</span><span><span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-500 align-middle"></span> câu có lỗi</span><span>· nhãn Câu đơn / Câu phức</span></div>`;}
+// rail (gọn)
+function gramCard(c,it){
+  const e=GRAM.errorTypes[0],s=GRAM.suggestions[0];
+  return `<div class="rounded-xl border bg-white p-3 shadow-sm" style="border-color:${c.text}33">
+    <div class="flex items-start justify-between"><div class="flex items-center gap-2 text-sm font-semibold" style="color:${c.labelTone}"><span class="h-2.5 w-2.5 rounded-full" style="background:${c.text}"></span> Phân tích · ${c.label}</div>
+      <div class="flex items-center gap-1.5"><button onclick="openGramModal()" class="rounded-md border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-500 hover:bg-slate-50">⛶ Bản đầy đủ</button><button onclick="railRemove('${it}')" class="text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-4 w-4"></i></button></div></div>
+    <div class="mt-1 text-xs" style="color:${c.text}">Điểm tiêu chí: <b>${c.score.toFixed(1)}</b></div>
+    <div class="mt-2 flex items-center justify-between gap-2"><span class="text-[12px] font-semibold text-slate-700">Độ chính xác & đa dạng</span><span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">${GRAM.badge}</span></div>
+    <div class="mt-2">${gramAccuracy()}</div>
+    <div class="mt-2">${gramComplexity()}</div>
+    <div class="mt-2 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-[12px]"><span class="font-medium text-slate-600">Lỗi thường gặp</span><span><b class="text-slate-800">${e.label}</b> · <span class="text-rose-600">${e.count} lỗi</span></span></div>
+    <div class="mt-2 rounded-lg border border-slate-100 p-2.5 text-[12px]"><b class="text-slate-800">💡 ${s.tip}</b></div>
+    <button onclick="openGramModal()" class="mt-3 w-full rounded-md border border-slate-200 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-50">Xem câu theo độ phức & cấu trúc ›</button>
+  </div>`;
+}
+// panel rộng (đầy đủ, 2 cột)
+function openGramModal(){
+  document.getElementById('gramModal').innerHTML=`
+    <button onclick="closeGramModal()" class="absolute right-4 top-4 text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-5 w-5"></i></button>
+    <div class="mb-4 flex items-center gap-2 text-base font-bold text-slate-800"><span class="h-2.5 w-2.5 rounded-full bg-[#d97706]"></span> Phân tích · Ngữ pháp <span class="text-sm font-normal text-slate-400">· ${GRAM.score.toFixed(1)}</span></div>
+    <div class="grid gap-5 md:grid-cols-2">
+      <div>
+        <div class="mb-2 text-sm font-bold text-slate-800">Câu trả lời theo câu</div>
+        ${gramSentences()}
+        ${gramLegend()}
+      </div>
+      <div class="space-y-4">
+        <div class="rounded-xl border border-slate-200 p-3"><div class="mb-2 text-sm font-bold text-slate-800">Độ chính xác</div>${gramAccuracy()}<div class="mt-3 mb-1 text-[12px] font-semibold text-slate-600">Độ đa dạng câu</div>${gramComplexity()}</div>
+        <div class="rounded-xl border border-slate-200 p-3"><div class="mb-2 text-sm font-bold text-slate-800">Cấu trúc nâng cao</div>${gramStructures()}</div>
+        <div class="rounded-xl border border-slate-200 p-3"><div class="mb-2 text-sm font-bold text-slate-800">Lỗi theo loại</div>${gramErrorTypes()}</div>
+        <div><div class="mb-2 text-sm font-bold text-slate-800">Gợi ý nâng cấp cấu trúc</div><div class="space-y-2">${gramSuggestions()}</div></div>
+      </div>
+    </div>`;
+  document.getElementById('gramScrim').classList.remove('hidden');
+  document.getElementById('gramModal').classList.remove('hidden');
+  icons();
+}
+function closeGramModal(){document.getElementById('gramScrim').classList.add('hidden');document.getElementById('gramModal').classList.add('hidden');}
+
+/* ===================== TIMELINE ===================== */
+function renderTimeline(){
+  const tl=document.getElementById('timeline');let html='';
+  if(attempts.length===0&&recState!=='recording'&&recState!=='processing'){
+    html=`<div class="flex h-full flex-col items-center justify-center space-y-3 text-slate-400"><i data-lucide="mic-2" class="h-12 w-12 text-slate-300"></i><p>Chưa có lượt thử nào. Bấm ghi âm để bắt đầu!</p></div>`;
+  }else{
+    html='<div class="space-y-8">';
+    attempts.forEach(a=>{
+      if(a.type==='error'&&a.errKey==='C1'){ // off-topic: vẫn hiện transcript user
+        html+=`<div class="space-y-3">
+          <div class="flex justify-end"><div class="relative max-w-[80%] rounded-xl rounded-tr-sm bg-blue-600 p-3 text-white shadow-sm"><div class="mb-2 text-xs font-medium uppercase tracking-wider opacity-80">Lần ${a.id}</div><p class="text-[13px] leading-relaxed">${OFFTOPIC_TRANSCRIPT}</p></div></div>
+          <div class="flex justify-start"><div class="w-full max-w-[92%]">${offTopicCard()}</div></div></div>`;
+        return;
+      }
+      if(a.type==='error'){
+        const recorded=!['A1','A2'].includes(a.errKey); // A1/A2: chưa ghi được nên không có bong bóng user
+        html+=`<div class="space-y-3">
+          ${recorded?`<div class="flex justify-end"><div class="relative max-w-[80%] rounded-xl rounded-tr-sm bg-blue-600 p-3 text-white shadow-sm"><div class="mb-1 text-xs font-medium uppercase tracking-wider opacity-80">Lần ${a.id}</div><div class="flex items-center gap-2 text-[13px] text-blue-50"><i data-lucide="mic" class="h-3.5 w-3.5"></i> Bản ghi ${a.recSec||0}s</div></div></div>`:''}
+          <div class="flex justify-start"><div class="w-full max-w-[92%]">${errorCard(a)}</div></div></div>`;
+        return;
+      }
+      html+=`<div class="space-y-3">
+        <div class="flex items-center gap-2 pl-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Lần ${a.id}${a.autoStopped?`<span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium normal-case text-slate-500"><i data-lucide="timer" class="h-3 w-3"></i> Đã tự dừng ở giới hạn</span>`:''}</div>
+        <div class="w-full">${evalPanel(a)}</div></div>`;});
+    if(recState==='recording')html+=`<div class="flex justify-end"><div class="flex h-16 w-64 items-center justify-center gap-1.5 overflow-hidden rounded-xl rounded-tr-sm bg-blue-600 p-3 shadow-sm">${[34,52,74,46,68,88,62,40,56,80,50,72].map((h,i)=>`<div class="rec-bar w-1.5 rounded-full bg-white/80" style="height:${h}%;animation-delay:${i*.05}s"></div>`).join('')}</div></div>`;
+    if(recState==='processing')html+=`<div class="flex justify-start"><div class="flex items-center gap-2 rounded-xl rounded-tl-sm border border-slate-200 bg-white p-3 shadow-sm"><i data-lucide="refresh-cw" class="h-5 w-5 animate-spin text-blue-500"></i><span class="text-sm font-medium text-slate-600">AI đang phân tích và chấm điểm...</span></div></div>`;
+    html+='<div class="h-4"></div></div>';
+  }
+  tl.innerHTML=html;
+  const tb=document.getElementById('trendBar');if(tb)tb.innerHTML=trendCard();
+  icons();
+}
+
+/* ===================== EVALUATION PANEL (TỐI ƯU) ===================== */
+function evalPanel(a){
+  const done=a.corr==='completed';
+  const sc=a.scores||SCORE_SEQ[0], prev=a.prevScores||null;
+  // 4 thẻ điểm thành phần = nút mở phân tích (kèm tooltip + delta so với lượt trước)
+  const scoreCards=CRITERIA.map(c=>{const val=sc[c.key];const d=prev?+(val-prev[c.key]).toFixed(1):null;
+    return `<div ${done?`onclick="openAnalysis('${c.key}')"`:''} class="group relative rounded-xl border border-white/60 p-2 shadow-sm transition ${done?'cursor-pointer hover:-translate-y-0.5 hover:shadow-md':''}" style="background:${c.bg}">
+      <div class="flex items-center justify-between gap-1.5"><span class="text-[11px] font-semibold leading-tight" style="color:${c.labelTone}">${c.label}</span><span class="flex items-center gap-1"><span class="text-sm font-bold" style="color:${c.text}">${val.toFixed(1)}</span>${d!==null?miniDelta(d):''}</span></div>
+      ${done?`<div class="pointer-events-none absolute left-1/2 top-full z-30 mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] font-medium text-white shadow-lg group-hover:block">Xem phân tích · ${c.label}<span class="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-slate-900"></span></div>`:''}
+    </div>`;}).join('');
+  return `<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><div class="space-y-3 p-3 sm:p-4">
+    <!-- header band -->
+    <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-center gap-2"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"><i data-lucide="sparkles" class="h-5 w-5 fill-current"></i></div><div class="text-[15px] font-semibold text-slate-900">AI Chấm điểm</div></div>
+        <div class="flex items-center gap-2"><div class="text-[26px] font-bold leading-none tracking-tight text-slate-950">${sc.overall.toFixed(1)}</div>${prev?bandDelta(+(sc.overall-prev.overall).toFixed(1)):''}</div>
+      </div>
+      <div class="mt-5 grid grid-cols-4 gap-2">${scoreCards}</div>
+    </div>
+    ${prev?encourageLine(sc,prev):''}
+    ${done?`<p class="-mt-1 text-center text-[12px] text-slate-400">Bấm vào từng tiêu chí ở trên để xem phân tích chi tiết ở cột <b class="text-slate-500">AI hỗ trợ</b> →</p>`:''}
+    ${a.expanded?`
+    <!-- Câu trả lời đã sửa (thay 3 tab) -->
+    <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-3">
+      <div class="mb-3 flex items-center gap-2 text-[13px] font-semibold text-slate-900"><i data-lucide="spell-check-2" class="h-5 w-5 text-emerald-600"></i> Câu trả lời của bạn — đã sửa lỗi</div>
+      ${done?`<div class="rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-[13px] leading-7 text-slate-800">${correctedSentence()}</div>
+        <div class="mt-2 flex items-center gap-2 text-[11px] text-slate-400"><span><span class="fix-del">gạch bỏ</span> = lỗi</span><span><span class="fix-ins">thay thế</span> = bản sửa</span><span>· bấm vào chỗ sửa để xem giải thích</span></div>`
+        :`<div class="space-y-2 animate-pulse"><div class="h-3 w-full rounded-full bg-slate-200"></div><div class="h-3 w-11/12 rounded-full bg-slate-200"></div><div class="h-3 w-3/4 rounded-full bg-slate-200"></div><p class="pt-1 text-xs text-slate-400">AI đang phân tích & sửa lỗi từ vựng / ngữ pháp…</p></div>`}
+    </div>
+    <!-- rewrite trigger (kết quả hiện ở rail) -->
+    <div>
+      <div class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Cải thiện câu trả lời</div>
+      <div class="grid grid-cols-3 gap-1.5">
+        <button onclick="${done?`doImprove('vocab')`:''}" ${done?'':'disabled'} class="rounded-md border px-2 py-2 text-[11.5px] font-medium ${done?'border-blue-200 bg-blue-50/60 text-blue-700 hover:bg-blue-50':'border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed'}">Nâng từ vựng</button>
+        <button onclick="${done?`doImprove('grammar')`:''}" ${done?'':'disabled'} class="rounded-md border px-2 py-2 text-[11.5px] font-medium ${done?'border-amber-200 bg-amber-50/60 text-amber-700 hover:bg-amber-50':'border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed'}">Đa dạng ngữ pháp</button>
+        <button onclick="${done?`doImprove('idea')`:''}" ${done?'':'disabled'} class="rounded-md border px-2 py-2 text-[11.5px] font-medium ${done?'border-emerald-200 bg-emerald-50/60 text-emerald-700 hover:bg-emerald-50':'border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed'}">Phát triển ý sâu</button>
+      </div>
+      <p class="mt-1.5 text-[11px] text-slate-400">Kết quả + cách nâng cấp hiện ở cột AI hỗ trợ →</p>
+    </div>
+    `:`<div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-3"><p class="line-clamp-2 text-[13px] leading-6 text-slate-900">My hometown is a small town near Hanoi. I really enjoy the peaceful atmosphere…</p></div>`}
+    <div class="flex justify-center"><button onclick="toggleEval(${a.id})" class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm hover:bg-slate-50">${a.expanded?'Thu gọn':'Mở rộng'} <i data-lucide="${a.expanded?'chevron-up':'chevron-down'}" class="h-4 w-4"></i></button></div>
+  </div></div>`;
+}
+let FIX_DATA=[];
+function correctedSentence(){
+  FIX_DATA=[];
+  return SENTENCE.replace(/<FIX:([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^>]+)>/g,(m,wrong,right,kind,explain,label)=>{
+    const idx=FIX_DATA.length;
+    FIX_DATA.push({wrong,right,explain,label});
+    return `<span class="fix-del">${wrong}</span> <span class="fix-ins" onclick="showFix(event,${idx})">${right}</span>`;
+  });
+}
+function showFix(e,idx){
+  e.stopPropagation();
+  const d=FIX_DATA[idx]; if(!d)return;
+  const p=document.getElementById('fixpop');
+  p.innerHTML=`<div class="mb-1 inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">${d.label}</div>
+    <div class="text-[13px] leading-5"><span class="fix-del">${d.wrong}</span> → <span class="font-semibold text-emerald-700">${d.right}</span></div>
+    <p class="mt-1.5 text-[12.5px] leading-5 text-slate-600">${d.explain}</p>`;
+  p.classList.remove('hidden');
+  const x=Math.min(e.clientX+10,window.innerWidth-280),y=e.clientY+12;
+  p.style.left=x+'px';p.style.top=y+'px';icons();
+}
+document.addEventListener('click',e=>{const p=document.getElementById('fixpop');if(p&&!p.contains(e.target)&&!(e.target.classList&&e.target.classList.contains('fix-ins')))p.classList.add('hidden');});
+function toggleEval(id){const a=attempts.find(x=>x.id===id);a.expanded=!a.expanded;renderTimeline();}
+
+/* ===================== RAIL (AI hỗ trợ) — chèn thêm card phân tích ===================== */
+function renderRail(){
+  const b=document.getElementById('railBody');
+  if(railItems.length===0){b.innerHTML=`<div class="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-slate-400"><i data-lucide="sparkles" class="h-8 w-8 text-slate-200"></i><p class="text-sm leading-6">Phân tích từng tiêu chí, câu mẫu, từ vựng & ghi chú sẽ hiện ở đây.</p></div>`;icons();return;}
+  b.innerHTML=railItems.map(it=>{
+    if(it==='loading')return `<div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"><div class="flex items-center gap-2 text-sm font-semibold text-slate-900"><i data-lucide="loader-circle" class="h-4 w-4 animate-spin"></i> Đang tạo câu cải thiện…</div></div>`;
+    if(it.startsWith('an:')){const c=CRITERIA.find(x=>x.key===it.slice(3));if(!c)return '';
+      if(c.key==='pronunciation')return pronCard(c,it);
+      if(c.key==='fluency')return fluencyCard(c,it);
+      if(c.key==='lexical')return vocabCard(c,it);
+      if(c.key==='grammar')return gramCard(c,it);
+      return `<div class="rounded-xl border bg-white p-3 shadow-sm" style="border-color:${c.text}33">
+        <div class="flex items-start justify-between"><div class="flex items-center gap-2 text-sm font-semibold" style="color:${c.labelTone}"><span class="h-2.5 w-2.5 rounded-full" style="background:${c.text}"></span> Phân tích · ${c.label}</div>
+          <button onclick="railRemove('${it}')" class="text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-4 w-4"></i></button></div>
+        <div class="mt-1 text-xs" style="color:${c.text}">Điểm tiêu chí: <b>${c.score.toFixed(1)}</b></div>
+        <ul class="mt-3 space-y-2">${c.analysis.map(t=>`<li class="flex items-start gap-2 text-[13px] leading-6 text-slate-700"><i data-lucide="dot" class="mt-0.5 h-4 w-4 shrink-0" style="color:${c.text}"></i><span>${t}</span></li>`).join('')}</ul></div>`;
+    }
+    if(it==='sample')return `<div class="rounded-xl bg-slate-100 p-3"><div class="flex items-start gap-2"><span class="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white"><i data-lucide="volume-2" class="h-4 w-4"></i></span><p class="text-[13px] italic leading-6 text-slate-600">&quot;My hometown is a charming little town on the outskirts of Hanoi. What I treasure most is its tranquil atmosphere…&quot;</p></div></div>`;
+    if(it==='vocab')return `<div class="grid gap-2 sm:grid-cols-2">${[['tranquil','yên bình','C1','#7c3aed'],['on the outskirts of','ở ngoại ô','B2','#2563eb'],['treasure','trân trọng','C1','#7c3aed'],['unwind','thư giãn','B2','#2563eb']].map(v=>`<div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"><div class="flex items-start justify-between gap-2"><p class="text-sm font-semibold leading-5 text-slate-800">${v[0]}</p><span class="inline-flex shrink-0 items-center gap-2 text-xs font-medium text-slate-500"><span class="h-2.5 w-2.5 rounded-full" style="background:${v[3]}"></span>${v[2]}</span></div><p class="mt-1 text-sm italic leading-5 text-slate-500">${v[1]}</p></div>`).join('')}</div>`;
+    if(it==='note')return `<textarea placeholder="Ghi nhanh idea, từ mới, cấu trúc muốn thử ở lượt tiếp theo..." class="min-h-40 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"></textarea>`;
+    if(it.startsWith('imp:'))return impCardRail(it.slice(4));
+    return '';
+  }).join('');
+  icons();
+}
+function railAdd(kind){if(!railItems.includes(kind))railItems.unshift(kind);renderRail();}
+function railRemove(it){railItems=railItems.filter(x=>x!==it);renderRail();}
+function openAnalysis(key){
+  const it='an:'+key;
+  if(railItems.includes(it)){railItems=railItems.filter(x=>x!==it);railItems.unshift(it);}
+  else railItems.unshift(it);
+  renderRail();
+  document.getElementById('railBody').scrollTop=0;
+}
+/* ===== CẢI THIỆN CÂU (coach): dữ liệu + hàm ===== */
+const IMP_CAT={vocab:{c:'#2563eb',label:'Từ vựng'},grammar:{c:'#d97706',label:'Ngữ pháp'},cohesion:{c:'#059669',label:'Liên kết / Ý'},colloc:{c:'#7c3aed',label:'Collocation'}};
+const IMPROVE={
+ vocab:{label:'Nâng từ vựng',color:'#2563eb',target:'7.0',
+   answer:"My hometown is a small town near Hanoi. I <U:vocab|genuinely cherish|'really enjoy' (A2) → 'genuinely cherish' (C1): diễn đạt tình cảm gắn bó mạnh và tự nhiên hơn> its <U:colloc|tranquil atmosphere|collocation tự nhiên thay cho 'peaceful atmosphere'> and the <U:vocab|warm-hearted locals|'friendly people' → 'warm-hearted locals' (C1): chính xác & nâng band>.",
+   changes:[{cat:'vocab',text:"enjoy → cherish · peaceful → tranquil"},{cat:'colloc',text:"tranquil atmosphere · warm-hearted locals"}],
+   phrases:['genuinely cherish','tranquil atmosphere','warm-hearted locals'],
+   trans:'Quê tôi là một thị trấn nhỏ gần Hà Nội. Tôi thực sự trân trọng bầu không khí yên bình và những người dân ấm áp nơi đây.'},
+ grammar:{label:'Đa dạng ngữ pháp',color:'#d97706',target:'7.0',
+   answer:"My hometown is a small town near Hanoi, <U:grammar|which I cherish for its peaceful atmosphere|thêm mệnh đề quan hệ 'which…' để gộp 2 câu đơn thành 1 câu phức>. <U:grammar|Whenever I go back, I feel as if I can finally unwind|mệnh đề thời gian 'whenever' + cấu trúc so sánh 'as if'>.",
+   changes:[{cat:'grammar',text:"Gộp câu phức bằng mệnh đề quan hệ 'which…'"},{cat:'grammar',text:"Mệnh đề thời gian 'whenever' + 'as if'"}],
+   phrases:['which I cherish','as if I can','whenever I go back'],
+   trans:'Quê tôi là một thị trấn nhỏ gần Hà Nội, nơi tôi yêu vì bầu không khí yên bình. Mỗi lần về, tôi như được thư giãn hoàn toàn.'},
+ idea:{label:'Phát triển ý sâu',color:'#059669',target:'7.0',
+   answer:"My hometown is a small town near Hanoi. I really enjoy its peaceful atmosphere — <U:cohesion|for instance, every morning I hear birds singing instead of traffic|thêm ví dụ cụ thể để phát triển ý, tránh nói chung chung>. <U:cohesion|That is why I always feel recharged whenever I visit|liên kết 'that is why' + nêu lý do, tăng mạch lạc>.",
+   changes:[{cat:'cohesion',text:"Thêm ví dụ cụ thể (for instance…)"},{cat:'cohesion',text:"Liên kết & nêu lý do (that is why…)"}],
+   phrases:['for instance','that is why','feel recharged'],
+   trans:'Quê tôi là một thị trấn nhỏ gần Hà Nội. Tôi rất thích bầu không khí yên bình — ví dụ, mỗi sáng tôi nghe tiếng chim hót thay vì tiếng xe cộ. Vì vậy tôi luôn thấy được nạp lại năng lượng mỗi khi về.'},
+};
+let IMP_TAGS={};
+function impTagged(goal){let i=0;return IMPROVE[goal].answer.replace(/<U:([^|]+)\|([^|]+)\|([^>]+)>/g,(mm,cat,text,why)=>{const idx=i++;IMP_TAGS[goal+'|'+idx]={cat,text,why};const col=IMP_CAT[cat].c;return `<span onclick="showImpTag(event,'${goal}',${idx})" class="cursor-pointer rounded px-1 font-semibold" style="color:${col};background:${col}1a;border-bottom:2px solid ${col}">${text}</span>`;});}
+function showImpTag(e,goal,idx){e.stopPropagation();const d=IMP_TAGS[goal+'|'+idx];if(!d)return;const col=IMP_CAT[d.cat].c;const p=document.getElementById('fixpop');
+  p.innerHTML=`<div class="mb-1 inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold" style="background:${col}1a;color:${col}">${IMP_CAT[d.cat].label}</div><div class="text-[13px] font-semibold text-slate-800">${d.text}</div><p class="mt-1 text-[12.5px] leading-5 text-slate-600">${d.why}</p>`;
+  p.classList.remove('hidden');p.style.left=Math.min(e.clientX+10,window.innerWidth-280)+'px';p.style.top=(e.clientY+12)+'px';}
+function impCardRail(goal){const m=IMPROVE[goal];
+  return `<div class="rounded-xl border bg-white p-3 shadow-sm" style="border-color:${m.color}40">
+    <div class="flex items-start justify-between"><div class="flex items-center gap-2 text-sm font-semibold" style="color:${m.color}"><i data-lucide="wand-2" class="h-4 w-4"></i> Câu tốt hơn · ${m.label}</div>
+      <button onclick="railRemove('imp:${goal}')" class="text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-4 w-4"></i></button></div>
+    <div class="mt-1 text-[11px] text-slate-400">Hướng tới band ${m.target} · bấm từ tô màu để xem vì sao</div>
+    <div class="mt-2 rounded-lg bg-slate-50/60 p-2.5 text-[13px] leading-7 text-slate-800">${impTagged(goal)}</div>
+    <div class="mt-2 flex flex-wrap gap-1">${m.changes.map(ch=>`<span class="rounded-md px-2 py-0.5 text-[10.5px] font-semibold" style="background:${IMP_CAT[ch.cat].c}1a;color:${IMP_CAT[ch.cat].c}">${IMP_CAT[ch.cat].label}</span>`).join('')}</div>
+    <div class="mt-3 flex gap-1.5">
+      <button onclick="openImpModal('${goal}')" class="flex-1 rounded-md border border-slate-200 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-slate-50">⛶ Bản đầy đủ</button>
+      <button onclick="tryAgain()" class="flex-1 rounded-md bg-blue-600 py-1.5 text-[12px] font-medium text-white hover:bg-blue-700">🎙 Thử nói lại</button>
+    </div>
+  </div>`;}
+function openImpModal(goal){const m=IMPROVE[goal];
+  document.getElementById('impModal').innerHTML=`
+    <button onclick="closeImpModal()" class="absolute right-4 top-4 text-slate-300 hover:text-slate-500"><i data-lucide="x" class="h-5 w-5"></i></button>
+    <div class="mb-1 flex items-center gap-2 text-base font-bold text-slate-800"><i data-lucide="wand-2" class="h-4 w-4" style="color:${m.color}"></i> Câu trả lời tốt hơn · ${m.label}</div>
+    <div class="mb-4 text-[12px] text-slate-400">Hướng tới band ${m.target} · bấm vào chỗ tô màu để xem vì sao & kỹ thuật</div>
+    <div class="grid gap-5 md:grid-cols-2">
+      <div>
+        <div class="mb-2 text-sm font-bold text-slate-800">Câu nâng cấp</div>
+        <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-3 text-[14px] leading-8 text-slate-800">${impTagged(goal)}</div>
+        <div class="mt-2 flex flex-wrap gap-3 text-[11px] text-slate-500">${Object.values(IMP_CAT).map(c=>`<span><span class="inline-block h-2.5 w-2.5 rounded-full align-middle" style="background:${c.c}"></span> ${c.label}</span>`).join('')}</div>
+        <div class="mt-3 flex items-center gap-2"><button class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-teal-400 text-teal-500 hover:bg-teal-50"><i data-lucide="volume-2" class="h-4 w-4"></i></button><span class="text-[12px] text-slate-500">Nghe mẫu câu nâng cấp</span></div>
+        <div class="mt-3"><div class="text-[12px] font-medium text-slate-600">Dịch nghĩa</div><div class="mt-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[13px] leading-6 text-emerald-700">${m.trans}</div></div>
+      </div>
+      <div class="space-y-4">
+        <div><div class="mb-2 text-sm font-bold text-slate-800">Bạn đã nâng cấp gì</div><div class="space-y-1.5">${m.changes.map(ch=>`<div class="flex items-start gap-2 text-[12.5px]"><span class="mt-1 h-2 w-2 shrink-0 rounded-full" style="background:${IMP_CAT[ch.cat].c}"></span><span><b style="color:${IMP_CAT[ch.cat].c}">${IMP_CAT[ch.cat].label}:</b> ${ch.text}</span></div>`).join('')}</div></div>
+        <div><div class="mb-2 text-sm font-bold text-slate-800">Cụm đáng học</div><div class="space-y-1.5">${m.phrases.map(p=>`<div class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2"><span class="text-[13px] font-medium text-slate-800">${p}</span><button onclick="saveFlash('${p.replace(/'/g,"\\'")}',this)" class="flex items-center gap-1 rounded-md bg-violet-50 px-2 py-1 text-[11px] font-semibold text-violet-600 hover:bg-violet-100"><i data-lucide="bookmark-plus" class="h-3.5 w-3.5"></i> Lưu</button></div>`).join('')}</div></div>
+        <button onclick="tryAgain()" class="w-full rounded-md bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"><i data-lucide="mic" class="inline h-4 w-4"></i> Thử nói lại theo gợi ý</button>
+      </div>
+    </div>`;
+  document.getElementById('impScrim').classList.remove('hidden');
+  document.getElementById('impModal').classList.remove('hidden');icons();}
+function closeImpModal(){document.getElementById('impScrim').classList.add('hidden');document.getElementById('impModal').classList.add('hidden');}
+function saveFlash(p,btn){btn.innerHTML='✓ Đã lưu';btn.classList.remove('bg-violet-50','text-violet-600');btn.classList.add('bg-emerald-50','text-emerald-600');showToast2('Đã lưu “'+p+'” vào từ vựng');}
+function tryAgain(){closeImpModal();showToast2('Bấm nút 🎙 để ghi lại, áp dụng gợi ý vừa xem');const tl=document.getElementById('timeline');if(tl)tl.scrollTop=tl.scrollHeight;}
+function doImprove(goal){const it='imp:'+goal;
+  if(railItems.includes('loading'))return;
+  if(railItems.includes(it)){railItems=railItems.filter(x=>x!==it);railItems.unshift(it);renderRail();document.getElementById('railBody').scrollTop=0;return;}
+  railItems.unshift('loading');renderRail();
+  setTimeout(()=>{railItems=railItems.filter(x=>x!=='loading');railItems.unshift(it);renderRail();document.getElementById('railBody').scrollTop=0;},1200);}
+let toast2T;
+function showToast2(msg){const t=document.getElementById('toast2');t.textContent=msg;t.classList.remove('hidden');clearTimeout(toast2T);toast2T=setTimeout(()=>t.classList.add('hidden'),2600);}
+
+/* INIT */
+renderPartTabs();renderTopicList();renderDetail();icons();
+</script>
+</body>
+</html>

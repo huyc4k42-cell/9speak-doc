@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Demo Responsive — Practice Room (đầy đủ luồng)</title>
+<style>
+  :root {
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-border: #e2e8f0;
+    --color-text: #0f172a;
+    --color-muted: #64748b;
+    --color-primary: #2563eb;
+    --color-primary-soft: #eff6ff;
+    --color-amber: #b45309;
+    --color-amber-soft: #fffbeb;
+    --color-emerald: #059669;
+    --color-rose: #e11d48;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 8px rgba(15, 23, 42, 0.04);
+    --shadow-modal: 0 20px 60px rgba(15, 23, 42, 0.25);
+    --transition-fast: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-panel: 260ms cubic-bezier(0.16, 1, 0.3, 1);
+    --rail-width: 64px;
+    --panel-width-wide: 380px;
+    --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  button { font-family: inherit; cursor: pointer; }
+  textarea { font-family: inherit; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  :focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 6px; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+
+  /* ─── App shell: container-query gốc, KHÔNG phụ thuộc viewport ────────── */
+  .app-shell {
+    container-type: inline-size;
+    container-name: app-shell;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 16px;
+    gap: 10px;
+  }
+
+  .app-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 4px 4px;
+    flex-wrap: wrap;
+  }
+  .app-header .back {
+    color: var(--color-muted); display: flex; align-items: center; gap: 6px; border: none; background: transparent;
+    font-size: 13px; font-weight: 600; padding: 4px;
+  }
+  .app-header .back:hover { color: var(--color-text); }
+  .app-header h1 { font-size: 15px; font-weight: 600; margin: 0; }
+  .badge {
+    font-size: 12px; font-weight: 500; color: var(--color-primary);
+    background: var(--color-primary-soft); border: 1px solid #bfdbfe;
+    padding: 3px 10px; border-radius: 999px;
+  }
+  button.badge-btn {
+    font: inherit; font-size: 12px; font-weight: 600; color: var(--color-primary);
+    background: var(--color-primary-soft); border: 1px solid #bfdbfe;
+    padding: 3px 10px; border-radius: 999px; display: flex; align-items: center; gap: 4px;
+  }
+  button.badge-btn:hover { background: #dbeafe; }
+  .topic-label { font-size: 13px; color: var(--color-muted); font-weight: 500; }
+  .header-spacer { flex: 1; }
+  .step-badge {
+    font-size: 12px; color: var(--color-muted); border: 1px solid var(--color-border);
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .quota-chip {
+    font-size: 12px; font-weight: 600; color: var(--color-emerald); background: #ecfdf5;
+    border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 999px; display: flex; align-items: center; gap: 5px;
+  }
+  .quota-chip[data-low="true"] { color: var(--color-amber); background: var(--color-amber-soft); border-color: #fde68a; }
+  .quota-chip[data-empty="true"] { color: var(--color-rose); background: #fff1f2; border-color: #fecdd3; }
+
+  /* ─── Thanh mô phỏng edge case (chỉ phục vụ demo) ──────────────────────── */
+  .demo-simbar {
+    flex-shrink: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    border: 1px dashed #cbd5e1; background: var(--color-surface); border-radius: var(--radius-md);
+    padding: 8px 14px; font-size: 12px;
+  }
+  .demo-simbar .tag { font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #64748b; font-size: 10.5px; }
+  .demo-simbar select {
+    font: inherit; font-size: 12.5px; border: 1px solid var(--color-border); border-radius: 8px;
+    padding: 5px 8px; color: var(--color-text); background: white;
+  }
+  .demo-simbar .hint { color: #64748b; }
+
+  .app-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: 16px;
+    position: relative;
+  }
+
+  /* ─── Cột hội thoại (trái) ──────────────────────────────────────────── */
+  .conversation-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  .question-block { flex-shrink: 0; padding: 14px 16px 0; }
+  .question-bubble {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); padding: 12px 18px;
+  }
+  .question-bubble .play-btn {
+    width: 34px; height: 34px; border-radius: 999px; background: var(--color-primary); border: none;
+    display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; margin-top: 1px;
+    transition: transform var(--transition-fast);
+  }
+  .question-bubble .play-btn:hover { transform: scale(1.06); }
+  .question-bubble .play-btn.is-playing { animation: pulse-ring 1.2s ease-in-out infinite; }
+  @keyframes pulse-ring { 0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,.4); } 50% { box-shadow: 0 0 0 8px rgba(37,99,235,0); } }
+  .question-bubble p { margin: 0; font-weight: 600; font-size: 15px; line-height: 1.5; }
+  .question-bubble p.cue-card { white-space: pre-line; font-size: 14px; }
+  .prep-note { margin: 8px 2px 0; font-size: 12px; color: var(--color-amber); display: flex; align-items: center; gap: 6px; }
+  .prep-note[hidden] { display: none; }
+
+  .trend-card {
+    margin: 10px 2px 0; display: flex; align-items: center; gap: 12px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); padding: 10px 14px; background: var(--color-surface);
+  }
+  .trend-card[hidden] { display: none; }
+  .trend-card .lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #64748b; line-height: 1.3; }
+  .trend-card svg { overflow: visible; }
+  .trend-card .delta { margin-left: auto; text-align: right; }
+  .trend-card .delta .count { font-size: 10.5px; color: #64748b; }
+  .trend-card .delta .val { font-size: 14px; font-weight: 700; }
+
+  .timeline {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 14px 16px 20px;
+    background: #fafbfc;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .timeline-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #cbd5e1; text-align: center; padding: 24px; }
+  .timeline-empty p { color: #64748b; font-size: 13px; margin: 0; max-width: 280px; }
+
+  .attempt-block { display: flex; flex-direction: column; gap: 10px; }
+  .attempt-label {
+    display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; color: #64748b; padding-left: 2px;
+  }
+  .attempt-label .autostop {
+    display: inline-flex; align-items: center; gap: 4px; background: #f1f5f9; color: var(--color-muted);
+    border-radius: 999px; padding: 2px 8px; font-size: 10.5px; font-weight: 600; text-transform: none; letter-spacing: 0;
+  }
+
+  .user-bubble {
+    align-self: flex-end; max-width: 80%; background: var(--color-primary); color: white;
+    border-radius: 16px 16px 4px 16px; padding: 10px 14px; box-shadow: var(--shadow-card);
+  }
+  .user-bubble .ub-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; opacity: .8; margin-bottom: 4px; }
+  .user-bubble p { margin: 0; font-size: 13px; line-height: 1.5; }
+  .user-bubble .rec-mini { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #dbeafe; }
+
+  .rec-waveform {
+    align-self: flex-end; display: flex; align-items: center; justify-content: center; gap: 4px;
+    width: 220px; height: 60px; background: var(--color-primary); border-radius: 16px 16px 4px 16px; padding: 10px;
+    box-shadow: var(--shadow-card);
+  }
+  .rec-waveform span { width: 5px; border-radius: 999px; background: rgba(255,255,255,.85); animation: bounce-bar .6s infinite ease-in-out; transform-origin: bottom; }
+  @keyframes bounce-bar { 0%, 100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
+
+  .processing-bubble {
+    align-self: flex-start; display: flex; align-items: center; gap: 8px; background: var(--color-surface);
+    border: 1px solid var(--color-border); border-radius: 16px 16px 16px 4px; padding: 10px 16px; box-shadow: var(--shadow-card);
+    font-size: 13px; font-weight: 500; color: var(--color-muted);
+  }
+  .spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── Error / edge-case cards ───────────────────────────────────────── */
+  .error-card { border-radius: var(--radius-lg); border: 1px solid; padding: 14px 16px; display: flex; gap: 12px; box-shadow: var(--shadow-card); }
+  .error-card .ic { width: 36px; height: 36px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .error-card .heading { font-size: 13.5px; font-weight: 700; margin: 0 0 4px; }
+  .error-card p.msg { margin: 0; font-size: 13px; line-height: 1.6; }
+  .error-card p.tip { margin: 6px 0 0; font-size: 12px; opacity: .85; }
+  .error-card .actions { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .error-card .actions button { border-radius: 10px; padding: 7px 14px; font-size: 13px; font-weight: 600; border: 1px solid transparent; }
+  .error-card .actions button.primary { background: var(--color-primary); color: white; }
+  .error-card .actions button.secondary { border-color: var(--color-border); background: white; color: var(--color-text); }
+  .error-card.tone-rose { border-color: #fecdd3; background: #fff1f2; } .error-card.tone-rose .ic { background: #ffe4e6; color: #be123c; } .error-card.tone-rose .heading { color: #9f1239; } .error-card.tone-rose p.msg { color: #9f1239; }
+  .error-card.tone-amber { border-color: #fde68a; background: #fffbeb; } .error-card.tone-amber .ic { background: #fef3c7; color: #b45309; } .error-card.tone-amber .heading { color: #92400e; } .error-card.tone-amber p.msg { color: #92400e; }
+  .error-card.tone-slate { border-color: var(--color-border); background: #f8fafc; } .error-card.tone-slate .ic { background: #e2e8f0; color: #475569; } .error-card.tone-slate .heading { color: #1e293b; } .error-card.tone-slate p.msg { color: #475569; }
+  .error-card.tone-indigo { border-color: #c7d2fe; background: #eef2ff; } .error-card.tone-indigo .ic { background: #e0e7ff; color: #4338ca; } .error-card.tone-indigo .heading { color: #3730a3; } .error-card.tone-indigo p.msg { color: #3730a3; }
+
+  .offtopic-card { border-radius: var(--radius-lg); border: 1px solid #c7d2fe; background: var(--color-surface); padding: 18px; text-align: center; box-shadow: var(--shadow-card); }
+  .offtopic-card .title { font-size: 13px; font-weight: 700; color: var(--color-amber); }
+  .offtopic-card p { margin: 10px auto 0; max-width: 440px; font-size: 12.5px; line-height: 1.7; color: var(--color-muted); }
+
+  /* ─── Eval card (kết quả chấm điểm 1 lượt) ──────────────────────────── */
+  .eval-card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-card); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .band-header { border: 1px solid var(--color-border); border-radius: var(--radius-md); background: #fafbfc; padding: 12px 14px; }
+  .band-header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .band-header-left { display: flex; align-items: center; gap: 8px; }
+  .band-header-left .ic { width: 32px; height: 32px; border-radius: 999px; background: #d1fae5; color: var(--color-emerald); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .band-header-left .lbl { font-size: 14px; font-weight: 600; color: var(--color-text); }
+  .band-header-right { display: flex; align-items: center; gap: 8px; }
+  .band-header-right .total { font-size: 26px; font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+  .delta-chip { font-size: 11px; font-weight: 700; border-radius: 6px; padding: 2px 6px; white-space: nowrap; }
+  .delta-chip.up { background: #d1fae5; color: #047857; } .delta-chip.down { background: #ffe4e6; color: #be123c; } .delta-chip.flat { background: #f1f5f9; color: #64748b; }
+  .mini-score-grid { margin-top: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  @container app-shell (min-width: 520px) { .mini-score-grid { grid-template-columns: repeat(4, 1fr); } }
+  .score-chip {
+    border-radius: var(--radius-md); padding: 8px 10px; text-align: left; border: 1px solid rgba(255,255,255,.6);
+    background: #f8fafc; transition: transform var(--transition-fast), box-shadow var(--transition-fast); position: relative;
+  }
+  button.score-chip { font: inherit; width: 100%; }
+  .score-chip.is-clickable:hover { transform: translateY(-1px); box-shadow: var(--shadow-card); cursor: pointer; }
+  .score-chip:not(.is-clickable) { cursor: default; }
+  .score-chip[data-active="true"] { outline: 2px solid var(--color-primary); outline-offset: -1px; }
+  .score-chip .row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .score-chip .k { font-size: 11px; color: var(--color-muted); display: block; }
+  .score-chip .v-wrap { display: flex; align-items: center; gap: 4px; }
+  .score-chip .v { font-size: 15px; font-weight: 700; }
+  .score-chip .mini-delta { font-size: 10px; font-weight: 700; }
+  .score-chip.tone-blue .v { color: #1d4ed8; } .score-chip.tone-violet .v { color: #7c3aed; }
+  .score-chip.tone-pink .v { color: #db2777; } .score-chip.tone-amber .v { color: #b45309; }
+  .score-hint { margin: 6px 2px 0; font-size: 11.5px; color: var(--color-muted); text-align: center; }
+
+  .encourage-line { border-radius: var(--radius-md); padding: 9px 12px; text-align: center; font-size: 12px; font-weight: 500; }
+  .encourage-line.up { background: #ecfdf5; color: #047857; } .encourage-line.down { background: var(--color-amber-soft); color: #92400e; } .encourage-line.flat { background: #f8fafc; color: var(--color-muted); }
+
+  .corrected-box { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px 14px; background: var(--color-surface); }
+  .corrected-box .cb-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--color-text); }
+  .corrected-box .cb-head .ic { color: var(--color-emerald); }
+  .corrected-text { border-radius: var(--radius-md); background: #fafbfc; border: 1px solid var(--color-border); padding: 12px; font-size: 13px; line-height: 1.9; color: #334155; }
+  .fix-del { color: var(--color-rose); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  .fix-ins { color: var(--color-emerald); font-weight: 600; background: #ecfdf5; border-radius: 4px; padding: 0 3px; border: none; font-size: inherit; font-family: inherit; }
+  .fix-ins:hover { background: #d1fae5; }
+  .legend-row { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: #64748b; }
+  .skeleton-lines { display: flex; flex-direction: column; gap: 8px; }
+  .skeleton-lines .sk { height: 11px; border-radius: 999px; background: linear-gradient(90deg, #e2e8f0 25%, #eef2f7 37%, #e2e8f0 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; }
+  @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+  .skeleton-lines .caption { font-size: 12px; color: #64748b; padding-top: 2px; }
+
+  .coach-trigger-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #64748b; margin-bottom: 6px; }
+  .coach-trigger-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .coach-trigger-grid button { border-radius: 8px; padding: 8px 6px; font-size: 11.5px; font-weight: 600; border: 1px solid; background: white; }
+  .coach-trigger-grid button.blue { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+  .coach-trigger-grid button.amber { border-color: #fde68a; background: var(--color-amber-soft); color: var(--color-amber); }
+  .coach-trigger-grid button.emerald { border-color: #a7f3d0; background: #ecfdf5; color: var(--color-emerald); }
+  .coach-trigger-grid button:disabled { border-color: var(--color-border); background: #f8fafc; color: #cbd5e1; cursor: not-allowed; }
+  .coach-hint { margin: 6px 0 0; font-size: 11px; color: #64748b; }
+
+  .expand-toggle-row { display: flex; justify-content: center; }
+  .expand-toggle-btn {
+    display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; border: 1px solid var(--color-border);
+    background: white; padding: 7px 16px; font-size: 12.5px; font-weight: 600; color: var(--color-muted); box-shadow: var(--shadow-card);
+  }
+  .attempt-collapsed-summary {
+    border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px; font-size: 13px;
+  }
+  .attempt-collapsed-summary .total { font-weight: 700; font-size: 16px; }
+  .attempt-collapsed-summary .note { color: var(--color-muted); font-size: 12px; margin-left: auto; }
+
+  .record-bar {
+    flex-shrink: 0; border-top: 1px solid var(--color-border); background: var(--color-surface);
+    padding: 14px 16px; display: flex; align-items: center; justify-content: center; gap: 20px; position: relative;
+  }
+  .mic-btn {
+    width: 58px; height: 58px; border-radius: 999px; border: none; background: var(--color-primary);
+    color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(37,99,235,.35);
+    transition: transform var(--transition-fast), background var(--transition-fast);
+  }
+  .mic-btn:hover { transform: scale(1.05); }
+  .mic-btn[data-state="recording"] { background: #ef4444; box-shadow: 0 6px 20px rgba(239,68,68,.35); }
+  .mic-btn[data-state="processing"] { background: #64748b; box-shadow: none; cursor: not-allowed; }
+  .mic-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .rec-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--color-muted); }
+  .rec-label.warn { color: var(--color-rose); }
+  .nav-btn { border: 1px solid var(--color-border); background: white; border-radius: 10px; padding: 8px 14px; font-size: 13px; color: var(--color-muted); display: flex; align-items: center; gap: 6px; }
+  .nav-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .nav-btn.left { position: absolute; left: 16px; } .nav-btn.right { position: absolute; right: 16px; }
+
+  /* ─── Assistant panel (phải) ────────────────────────────────────────── */
+  .assistant-panel {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    width: var(--panel-width-wide);
+    transition: width var(--transition-panel);
+  }
+  .assistant-head {
+    flex-shrink: 0; padding: 16px; text-align: center; position: relative;
+    background: linear-gradient(180deg, #eff6ff, #ffffff); border-bottom: 1px solid #dbeafe;
+  }
+  .assistant-head h2 { margin: 0; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  /* Vùng bấm mở rộng (>=44px) cho các nút icon nhỏ, không đổi kích thước hiển thị — WCAG 2.5.5 */
+  .collapse-btn, .modal-close, .feed-card .close-x, .mini-audio-row .play-round, .drill-play-row .play-round {
+    position: relative;
+  }
+  .collapse-btn::before, .modal-close::before, .feed-card .close-x::before,
+  .mini-audio-row .play-round::before, .drill-play-row .play-round::before {
+    content: ""; position: absolute; inset: 50% auto auto 50%; width: 44px; height: 44px; transform: translate(-50%, -50%);
+  }
+  .collapse-btn {
+    position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 999px;
+    border: 1px solid var(--color-border); background: white; color: var(--color-muted);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .collapse-btn:hover { background: #f1f5f9; }
+
+  .assistant-feed {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px;
+    scroll-behavior: smooth;
+  }
+  .feed-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #cbd5e1; text-align: center; padding: 24px; }
+  .feed-empty p { color: #64748b; font-size: 13px; margin: 0; }
+
+  .feed-card {
+    border-radius: var(--radius-md); padding: 14px; border: 1px solid var(--color-border);
+    opacity: 0; transform: translateY(8px) scale(.98);
+    animation: card-in var(--transition-panel) forwards;
+  }
+  @keyframes card-in { to { opacity: 1; transform: translateY(0) scale(1); } }
+  .feed-card.is-new { box-shadow: 0 0 0 3px rgba(37,99,235,.35); }
+  .feed-card.tone-slate { background: #f8fafc; }
+  .feed-card.tone-blue { background: #eff6ff; }
+  .feed-card.tone-amber { background: #fffbeb; }
+  .feed-card.tone-violet { background: #f5f3ff; }
+  .feed-card.tone-pink { background: #fdf2f8; }
+  .feed-card.insight-card { background: white; }
+  .feed-card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+  .feed-card-head .title { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .feed-card-head .title .dot { width: 9px; height: 9px; border-radius: 999px; flex-shrink: 0; }
+  .feed-card-head .score { font-size: 15px; font-weight: 700; }
+  .feed-card-head .head-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .feed-card p.body-text { margin: 0; font-size: 13px; line-height: 1.6; color: #334155; }
+  .feed-card .close-x { border: none; background: transparent; color: #64748b; padding: 2px; border-radius: 999px; }
+  .feed-card .close-x:hover { background: rgba(255,255,255,.6); color: #475569; }
+  .full-btn { border: 1px solid var(--color-border); background: white; border-radius: 8px; padding: 3px 8px; font-size: 10.5px; font-weight: 600; color: var(--color-muted); white-space: nowrap; }
+  .full-btn:hover { background: #f8fafc; }
+  .bar-track { height: 6px; border-radius: 999px; background: #e2e8f0; overflow: hidden; margin-top: 6px; }
+  .bar-fill { height: 100%; border-radius: 999px; }
+  .vocab-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .vocab-item { border: 1px solid #e2e8f0; background: white; border-radius: 12px; padding: 8px 10px; }
+  .vocab-item b { font-size: 13px; }
+  .vocab-item span { display: block; font-size: 12px; color: var(--color-muted); font-style: italic; }
+  textarea.note-input {
+    width: 100%; min-height: 110px; border-radius: var(--radius-md); border: 1px solid var(--color-border);
+    padding: 12px; font-size: 13px; resize: vertical;
+  }
+
+  /* insight card contents (phát âm/trôi chảy/từ vựng/ngữ pháp) */
+  .insight-score-line { font-size: 11.5px; margin-bottom: 8px; }
+  .dist-row { display: flex; gap: 6px; font-size: 10.5px; font-weight: 700; margin-top: 8px; }
+  .dist-row span { flex: 1; border-radius: 6px; padding: 4px 6px; text-align: center; }
+  .dist-row .good { background: #d1fae5; color: #047857; } .dist-row .fair { background: #fef3c7; color: #92400e; } .dist-row .needs { background: #ffe4e6; color: #be123c; }
+  .subhead { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #64748b; margin-top: 10px; }
+  .weak-word-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; padding: 3px 0; }
+  .weak-word-row button { border: none; background: transparent; font-weight: 600; color: #334155; padding: 0; font-size: 12px; }
+  .weak-word-row button:hover { color: #7c3aed; text-decoration: underline; }
+  .weak-sound-note { margin-top: 8px; border-radius: 10px; background: #f5f3ff; color: #6d28d9; padding: 8px 10px; font-size: 11.5px; }
+  .badge-pill { border-radius: 999px; padding: 2px 9px; font-size: 10.5px; font-weight: 700; }
+  .cefr-row { display: flex; align-items: center; gap: 6px; font-size: 10.5px; margin-top: 4px; }
+  .cefr-row .lv { width: 22px; flex-shrink: 0; border-radius: 4px; padding: 1px 0; text-align: center; font-weight: 700; color: white; }
+  .cefr-row .bar { flex: 1; height: 6px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+  .cefr-row .bar > div { height: 100%; }
+  .cefr-row .pct { width: 30px; text-align: right; color: var(--color-muted); font-weight: 600; }
+  .vocab-tip-mini { font-size: 11.5px; margin-top: 4px; color: #334155; }
+  .vocab-tip-mini b { text-transform: capitalize; }
+  .vocab-tip-mini .arrow { color: #64748b; }
+  .vocab-tip-mini .alt { color: #4f46e5; }
+  .accuracy-bar-row, .complexity-bar-row { margin-top: 6px; }
+  .accuracy-bar-row .lbl-row, .complexity-bar-row .lbl-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--color-muted); margin-bottom: 3px; }
+  .thin-bar { height: 6px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+  .thin-bar > div { height: 100%; }
+  .error-type-row { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }
+  .error-type-row .cnt { background: #ffe4e6; color: #be123c; border-radius: 6px; padding: 1px 6px; font-weight: 700; }
+  .structure-row { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; padding: 2px 0; gap: 6px; }
+  .structure-row .status { display: flex; align-items: center; gap: 4px; font-weight: 600; flex-shrink: 0; }
+  .suggestion-mini { margin-top: 6px; border-radius: 10px; border: 1px solid var(--color-border); padding: 8px 10px; font-size: 11.5px; }
+  .suggestion-mini b { font-size: 12px; }
+
+  /* coach / rewrite card */
+  .coach-card-head { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
+  .coach-target { font-size: 10.5px; color: #64748b; margin-top: 2px; }
+  .coach-answer-box { margin-top: 8px; border-radius: 10px; background: #fafbfc; padding: 10px; font-size: 12.5px; line-height: 1.8; color: #334155; }
+  .coach-tag { border: none; font: inherit; font-size: inherit; font-weight: 700; border-radius: 4px; padding: 0 3px; cursor: pointer; border-bottom: 2px solid; }
+  .coach-tags-row { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .coach-tags-row .tag-pill { font-size: 10px; font-weight: 700; border-radius: 6px; padding: 2px 7px; }
+  .coach-actions-row { margin-top: 10px; display: flex; gap: 6px; }
+  .coach-actions-row button { flex: 1; border-radius: 8px; padding: 6px 8px; font-size: 11.5px; font-weight: 600; border: 1px solid var(--color-border); background: white; color: var(--color-muted); }
+  .coach-actions-row button.primary { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+  .loading-card { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--color-text); }
+
+  .assistant-actions { flex-shrink: 0; border-top: 1px solid var(--color-border); padding: 12px; display: grid; gap: 8px; }
+  .actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .action-btn {
+    display: flex; align-items: center; gap: 8px; border-radius: 999px; border: 1px solid var(--color-border);
+    background: white; padding: 10px 12px; font-size: 13px; font-weight: 600; text-align: left;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+  }
+  .action-btn:hover { transform: translateY(-1px); }
+  .action-btn[data-added="true"] { opacity: .55; }
+  .action-btn .ico { width: 26px; height: 26px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .action-btn.blue .ico { background: #dbeafe; color: #1d4ed8; }
+  .action-btn.amber .ico { background: #fef3c7; color: #b45309; }
+  .action-btn.violet .ico { background: #ede9fe; color: #7c3aed; }
+  .action-btn.pink .ico { background: #fce7f3; color: #db2777; }
+  .action-btn.slate .ico { background: #f1f5f9; color: #475569; }
+
+  /* ─── RAIL ICON (bậc Medium: panel thu gọn) ────────────────────────── */
+  .rail-icons { display: none; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0; }
+  .rail-icon-btn {
+    width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--color-border); background: white;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .rail-icon-btn[data-added="true"]::after {
+    content: ""; position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 999px;
+    background: var(--color-primary); border: 2px solid white;
+  }
+  .rail-icon-btn[data-pending="true"]::after {
+    content: ""; position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 999px;
+    background: var(--color-primary); border: 2px solid white; animation: blink-dot 1s infinite;
+  }
+  @keyframes blink-dot { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+  .rail-icon-btn.blue { color: #1d4ed8; } .rail-icon-btn.amber { color: #b45309; }
+  .rail-icon-btn.violet { color: #7c3aed; } .rail-icon-btn.pink { color: #db2777; } .rail-icon-btn.slate { color: #475569; }
+
+  /* ─── overlay backdrop (Medium bp khi bung panel) ──────────────────── */
+  .backdrop {
+    position: fixed; inset: 0; background: rgba(15,23,42,.35); opacity: 0; pointer-events: none;
+    transition: opacity var(--transition-panel); z-index: 20;
+  }
+  .backdrop.visible { opacity: 1; pointer-events: auto; }
+
+  /* ─── mobile tabs (Compact) ─────────────────────────────────────────── */
+  .mobile-tabs {
+    display: none; flex-shrink: 0; background: #f1f5f9; border-radius: 999px; padding: 4px; gap: 4px;
+  }
+  .mobile-tabs button {
+    flex: 1; border: none; background: transparent; padding: 8px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--color-muted);
+  }
+  .mobile-tabs button[data-active="true"] { background: white; color: var(--color-text); box-shadow: var(--shadow-card); }
+
+  .viewport-badge {
+    position: fixed; bottom: 14px; right: 14px; background: #0f172a; color: white; font-size: 12px;
+    padding: 6px 12px; border-radius: 999px; opacity: .85; z-index: 40; font-variant-numeric: tabular-nums;
+  }
+
+  /* ══════════════════════════ MODALS / OVERLAYS (global, ngoài app-shell) ══════════════════════════ */
+  .modal-scrim { position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 60; display: none; }
+  .modal-scrim.visible { display: block; }
+  .modal-panel {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 70; display: none;
+    max-height: 90vh; overflow-y: auto; width: min(760px, 94vw); background: white; border-radius: 20px;
+    padding: 24px; box-shadow: var(--shadow-modal);
+  }
+  .modal-panel.size-md { width: min(620px, 94vw); }
+  .modal-panel.size-sm { width: min(420px, 94vw); }
+  .modal-panel.visible { display: block; }
+  .modal-close {
+    position: absolute; right: 16px; top: 16px; width: 30px; height: 30px; border-radius: 999px; border: 1px solid var(--color-border);
+    background: white; color: var(--color-muted); display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: #f1f5f9; }
+  .modal-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+  .modal-title .dot { width: 10px; height: 10px; border-radius: 999px; flex-shrink: 0; }
+  .modal-sub { font-size: 12px; color: #64748b; margin: 0 0 16px; }
+  .modal-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+  @media (min-width: 640px) { .modal-grid.two-col { grid-template-columns: 1fr 1fr; } }
+  .modal-section-title { font-size: 13.5px; font-weight: 700; margin: 0 0 8px; color: var(--color-text); }
+  .modal-transcript-box { border-radius: 14px; border: 1px solid var(--color-border); background: #fafbfc; padding: 14px; font-size: 14px; line-height: 2.1; color: #334155; }
+  .mini-audio-row { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
+  .mini-audio-row .play-round { width: 32px; height: 32px; border-radius: 999px; border: 2px solid #2dd4bf; color: #14b8a6; background: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .mini-audio-row .track { position: relative; flex: 1; height: 6px; border-radius: 999px; background: #e2e8f0; }
+  .mini-audio-row .track .fill { position: absolute; left: 0; top: 0; height: 100%; width: 8%; border-radius: 999px; background: #2dd4bf; }
+  .mini-audio-row .track .knob { position: absolute; top: 50%; left: 8%; width: 12px; height: 12px; border-radius: 999px; background: #0ea5e9; border: 2px solid white; transform: translate(-50%, -50%); box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+  .mini-audio-row .time { font-size: 11px; color: #64748b; font-variant-numeric: tabular-nums; }
+  .mistake-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  @media (min-width: 480px) { .mistake-grid { grid-template-columns: 1fr 1fr; } }
+  .mistake-card { border: 1px solid var(--color-border); border-radius: 12px; padding: 10px 12px; }
+  .mistake-card .top-row { display: flex; align-items: center; justify-content: space-between; }
+  .mistake-card .top-row b { font-size: 13.5px; }
+  .mistake-card .score-pill { border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 700; }
+  .mistake-card .ipa-row { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; margin-top: 6px; }
+  .mistake-card .ctx { display: block; font-size: 10.5px; font-style: italic; color: #64748b; margin-top: 6px; }
+  .mistake-card .drill-btn { margin-top: 6px; width: 100%; border-radius: 8px; background: #f5f3ff; color: #7c3aed; border: none; padding: 6px; font-size: 11px; font-weight: 700; }
+  .sound-card { border: 1px solid var(--color-border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+  .sound-card .head { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--color-text); }
+  .sound-card p { font-size: 11.5px; color: var(--color-muted); margin: 4px 0 0; }
+  .sound-card .words { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .sound-card .words button { border-radius: 999px; background: #f1f5f9; color: #475569; border: none; padding: 4px 10px; font-size: 11px; font-weight: 600; }
+  .prosody-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-radius: 8px; background: #f8fafc; padding: 6px 10px; font-size: 11.5px; margin-bottom: 5px; }
+  .modal-legend { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: #64748b; }
+  .modal-legend .dot-sm { display: inline-block; width: 9px; height: 9px; border-radius: 999px; vertical-align: middle; margin-right: 3px; }
+  .speed-gauge-box { border: 1px solid var(--color-border); border-radius: 14px; padding: 12px 14px; }
+  .speed-gauge-box .top-row { display: flex; align-items: center; justify-content: space-between; }
+  .speed-gauge-box .wpm-val { font-size: 17px; font-weight: 700; color: #4f46e5; }
+  .gauge-track { position: relative; height: 10px; border-radius: 999px; margin: 10px 0 4px; background: linear-gradient(90deg,#ef4444 0%,#f59e0b 22%,#22c55e 43%,#22c55e 64%,#f59e0b 82%,#ef4444 100%); }
+  .gauge-track .marker { position: absolute; top: 50%; width: 4px; height: 20px; background: #0f172a; border-radius: 3px; transform: translate(-50%, -50%); }
+  .gauge-labels { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; }
+  .gauge-note { font-size: 11px; color: #64748b; margin-top: 6px; }
+  .coherence-box { border: 1px solid var(--color-border); border-radius: 14px; padding: 12px 14px; }
+  .cefr-full-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .cefr-full-row .lv { width: 28px; flex-shrink: 0; border-radius: 6px; padding: 2px 0; text-align: center; font-size: 11px; font-weight: 700; color: white; }
+  .cefr-full-row .bar { flex: 1; height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+  .cefr-full-row .bar > div { height: 100%; }
+  .cefr-full-row .pct { width: 36px; text-align: right; font-size: 11.5px; font-weight: 600; color: var(--color-muted); }
+  .voc-tip-card { border: 1px solid var(--color-border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+  .voc-tip-card .word { font-size: 13.5px; font-weight: 700; text-transform: capitalize; }
+  .voc-tip-card .alts { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .voc-tip-card .alts span { border-radius: 999px; background: #eef2ff; color: #4f46e5; padding: 3px 10px; font-size: 12px; font-weight: 500; }
+  .sentence-row { display: flex; gap: 8px; border-radius: 10px; background: #fafbfc; border: 1px solid var(--color-border); padding: 8px 10px; margin-bottom: 6px; }
+  .sentence-row .bar-tag { width: 4px; flex-shrink: 0; border-radius: 999px; }
+  .sentence-row .txt { font-size: 12.5px; line-height: 1.6; color: #334155; }
+  .sentence-row .type-pill { display: inline-block; margin-top: 4px; border-radius: 4px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
+  .sentence-row .ok-note { flex-shrink: 0; font-size: 11px; font-weight: 600; align-self: center; }
+  .struct-full-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; padding: 4px 0; }
+  .struct-full-row .status { display: flex; align-items: center; gap: 4px; font-weight: 600; }
+  .suggestion-full-card { border: 1px solid var(--color-border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+  .suggestion-full-card .tip-title { font-size: 13px; font-weight: 700; }
+  .suggestion-full-card .ex { font-size: 12px; font-style: italic; color: var(--color-muted); margin: 4px 0 0; }
+
+  /* coach full modal */
+  .coach-diff-box { border-radius: 14px; border: 1px solid var(--color-border); background: #fafbfc; padding: 14px; font-size: 14px; line-height: 1.9; color: #1e293b; }
+  .translation-box { border-radius: 12px; border: 1px solid var(--color-border); background: #fafbfc; padding: 10px 12px; font-size: 13px; color: #047857; margin-top: 6px; }
+  .change-row { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; margin-bottom: 6px; }
+  .change-row .dot-sm2 { width: 8px; height: 8px; border-radius: 999px; margin-top: 5px; flex-shrink: 0; }
+  .phrase-row { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--color-border); border-radius: 10px; padding: 8px 12px; margin-bottom: 6px; }
+  .phrase-row .txt { font-size: 13px; font-weight: 600; }
+  .phrase-row button { border: none; background: #f5f3ff; color: #7c3aed; border-radius: 8px; padding: 5px 10px; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+  .phrase-row button.saved { background: #ecfdf5; color: #059669; }
+  .full-cta-btn { width: 100%; border-radius: 10px; background: var(--color-primary); color: white; border: none; padding: 10px; font-size: 13.5px; font-weight: 700; margin-top: 6px; }
+
+  /* fix popover (dùng chung: corrected-answer + coach diff) */
+  .fix-popover {
+    position: fixed; z-index: 80; display: none; width: 260px; border-radius: 14px; border: 1px solid var(--color-border);
+    background: white; padding: 12px; font-size: 12.5px; box-shadow: var(--shadow-modal);
+  }
+  .fix-popover.visible { display: block; }
+  .fix-popover .fp-cat { display: inline-flex; border-radius: 6px; padding: 2px 8px; font-size: 10.5px; font-weight: 700; margin-bottom: 6px; }
+  .fix-popover .fp-diff { font-size: 13px; line-height: 1.5; }
+  .fix-popover p { margin: 6px 0 0; line-height: 1.5; color: #475569; }
+
+  /* word drill modal */
+  .drill-word-title { text-align: center; }
+  .drill-play-row { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .drill-play-row .play-round { width: 36px; height: 36px; border-radius: 999px; border: 2px solid #2dd4bf; color: #14b8a6; background: white; display: flex; align-items: center; justify-content: center; }
+  .drill-word-title .word { font-size: 21px; font-weight: 700; }
+  .drill-ipa { text-align: center; margin-top: 8px; font-size: 13px; letter-spacing: .25em; color: var(--color-muted); }
+  .drill-meaning { text-align: center; margin-top: 4px; color: var(--color-muted); font-size: 13px; }
+  .drill-compare-box { margin-top: 18px; border-radius: 14px; background: #f8fafc; padding: 14px; }
+  .drill-compare-box .lbl { text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #64748b; }
+  .drill-phoneme-row { margin-top: 12px; display: flex; align-items: center; gap: 12px; }
+  .drill-phoneme-row .who { width: 44px; flex-shrink: 0; text-align: right; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #cbd5e1; }
+  .drill-phoneme-row .phonemes { display: flex; gap: 8px; font-size: 16px; font-weight: 700; }
+  .drill-guide-box { margin-top: 14px; border-radius: 12px; border-left: 4px solid #6366f1; background: #eef2ff; padding: 10px 12px; }
+  .drill-guide-box .g-head { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #4338ca; flex-wrap: wrap; }
+  .drill-guide-box .g-target { border-radius: 6px; background: #e0e7ff; color: #4338ca; padding: 2px 8px; }
+  .drill-guide-box p { font-size: 12.5px; font-weight: 600; color: #1e293b; margin: 8px 0 0; }
+  .drill-cta-row { margin-top: 18px; display: flex; justify-content: flex-end; }
+  .drill-cta-row button { border-radius: 999px; background: #4338ca; color: white; border: none; padding: 9px 22px; font-size: 13.5px; font-weight: 700; }
+  .drill-hint { text-align: center; color: var(--color-muted); font-size: 12.5px; margin-top: 16px; }
+
+  /* toast */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 8px); z-index: 90; background: #0f172a; color: white;
+    font-size: 13px; font-weight: 500; padding: 10px 18px; border-radius: 10px; opacity: 0; pointer-events: none;
+    transition: opacity 200ms ease, transform 200ms ease; box-shadow: var(--shadow-modal);
+  }
+  .toast.visible { opacity: 1; transform: translate(-50%, 0); }
+
+  /* paywall overlay */
+  .paywall-card { text-align: center; }
+  .paywall-card .ic { width: 52px; height: 52px; border-radius: 999px; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+  .paywall-card h2 { font-size: 17px; margin: 0 0 8px; }
+  .paywall-card p { font-size: 13px; color: var(--color-muted); line-height: 1.6; margin: 0 0 18px; }
+  .paywall-card .cta { width: 100%; border-radius: 10px; background: var(--color-primary); color: white; border: none; padding: 11px; font-size: 14px; font-weight: 700; }
+  .paywall-card .later { margin-top: 8px; width: 100%; border-radius: 10px; background: transparent; color: var(--color-muted); border: none; padding: 8px; font-size: 12.5px; }
+
+  /* ══════════════════════════ BREAKPOINTS (container query) ══════════════════════════ */
+
+  /* Compact: < 768px theo app-shell — tab full-screen, panel/main tách theo tab active */
+  @container app-shell (max-width: 767px) {
+    .mobile-tabs { display: flex; }
+    .app-body { flex-direction: column; }
+    .app-body[data-active-tab="conversation"] .assistant-panel { display: none; }
+    .app-body[data-active-tab="assistant"] .conversation-col { display: none; }
+    .assistant-panel { width: 100%; flex: 1; min-height: 0; }
+    .rail-icons, .collapse-btn { display: none !important; }
+  }
+
+  /* Medium: 768–1199px — panel thu gọn thành rail-icon, bấm icon bung drawer đè lên */
+  @container app-shell (min-width: 768px) and (max-width: 1199px) {
+    .conversation-col { margin-right: calc(var(--rail-width) + 12px); }
+    .assistant-panel {
+      position: absolute; top: 0; right: 0; bottom: 0;
+      width: var(--rail-width);
+      z-index: 30;
+    }
+    .assistant-panel[data-expanded="true"] {
+      width: min(420px, calc(100% - 32px));
+    }
+    .assistant-panel:not([data-expanded="true"]) .assistant-head h2 span.label,
+    .assistant-panel:not([data-expanded="true"]) .assistant-feed,
+    .assistant-panel:not([data-expanded="true"]) .assistant-actions,
+    .assistant-panel:not([data-expanded="true"]) .collapse-btn {
+      display: none;
+    }
+    .assistant-panel:not([data-expanded="true"]) .rail-icons { display: flex; }
+    .assistant-panel[data-expanded="true"] .rail-icons { display: none; }
+    .assistant-panel:not([data-expanded="true"]) .assistant-head { padding: 14px 0; }
+  }
+
+  /* Wide: >=1200px — split 2 cột thật, panel có thể tự thu gọn (manual collapse) */
+  @container app-shell (min-width: 1200px) {
+    .assistant-panel[data-collapsed="true"] {
+      width: var(--rail-width);
+    }
+    .assistant-panel[data-collapsed="true"] .assistant-head h2 span.label,
+    .assistant-panel[data-collapsed="true"] .assistant-feed,
+    .assistant-panel[data-collapsed="true"] .assistant-actions {
+      display: none;
+    }
+    .assistant-panel[data-collapsed="true"] .rail-icons { display: flex; }
+    .assistant-panel[data-collapsed="true"] .collapse-btn svg { transform: rotate(180deg); }
+    .rail-icons { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <header class="app-header">
+      <h1 class="sr-only">Luyện Tập Chi Tiết — Practice Room</h1>
+      <button class="back" id="backBtn" type="button" aria-label="Quay lại Luyện Tập Chi Tiết">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Luyện Tập Chi Tiết
+      </button>
+      <button class="badge-btn" id="partBadge" type="button" title="Bấm để đổi Part (demo)">Part 1</button>
+      <span class="topic-label" id="topicLabel">Hometown</span>
+      <span class="header-spacer"></span>
+      <span class="quota-chip" id="quotaChip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 2v20M2 12h20"/></svg> <span id="quotaText">5 lượt chấm hôm nay</span></span>
+      <span class="step-badge" id="stepBadge">Câu 1 / 5</span>
+    </header>
+
+    <div class="demo-simbar" role="group" aria-label="Bộ mô phỏng tình huống (chỉ phục vụ demo)">
+      <span class="tag">Demo edge case</span>
+      <label class="sr-only" for="simCase">Chọn tình huống mô phỏng</label>
+      <select id="simCase">
+        <option value="normal">Bình thường (chấm điểm)</option>
+        <option value="A1">A1 · Mic bị từ chối</option>
+        <option value="A2">A2 · Không có mic / không hỗ trợ</option>
+        <option value="B1">B1 · Ghi quá ngắn</option>
+        <option value="B2">B2 · Im lặng / không có giọng</option>
+        <option value="B3">B3 · Tạp âm nhiễu</option>
+        <option value="B4">B4 · Quá dài (tự dừng + vẫn chấm)</option>
+        <option value="B5">B5 · Sai ngôn ngữ</option>
+        <option value="C1">C1 · Lệch đề</option>
+        <option value="quota">Hết lượt chấm (paywall)</option>
+      </select>
+      <span class="hint">→ bấm 🎙️ để xem tình huống · giới hạn ghi âm demo rút ngắn còn 8s</span>
+    </div>
+
+    <div class="app-body" id="appBody" data-active-tab="conversation">
+      <nav class="mobile-tabs" id="mobileTabs">
+        <button data-tab="conversation" data-active="true">Luyện nói</button>
+        <button data-tab="assistant" data-active="false">AI hỗ trợ</button>
+      </nav>
+
+      <main class="conversation-col">
+        <div class="question-block">
+          <div class="question-bubble">
+            <button class="play-btn" id="playQBtn" type="button" aria-label="Nghe câu hỏi">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
+            </button>
+            <p id="questionText">"Do you like advertisements?"</p>
+          </div>
+          <p class="prep-note" id="prepNote" hidden>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            Part 2: bạn có 1 phút chuẩn bị trước khi nói liền mạch 1–2 phút.
+          </p>
+          <div class="trend-card" id="trendCard" hidden></div>
+        </div>
+
+        <div class="timeline" id="timeline" aria-live="polite">
+          <div class="timeline-empty" id="timelineEmpty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/></svg>
+            <p>Chưa có lượt thử nào. Bấm nút ghi âm bên dưới để bắt đầu!</p>
+          </div>
+        </div>
+
+        <div class="record-bar">
+          <button class="nav-btn left" id="prevBtn" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Câu trước
+          </button>
+          <div class="mic-wrap">
+            <button class="mic-btn" id="micBtn" type="button" data-state="idle" aria-label="Bắt đầu ghi âm">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/></svg>
+            </button>
+            <span class="rec-label" id="recLabel">Bắt đầu ghi âm</span>
+          </div>
+          <button class="nav-btn right" id="nextBtn" type="button">
+            Câu tiếp
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </main>
+
+      <div class="backdrop" id="backdrop"></div>
+
+      <aside class="assistant-panel" id="assistantPanel" data-expanded="false" data-collapsed="false">
+        <div class="assistant-head">
+          <h2>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 7.2H22l-6 4.6L18.4 22 12 17.4 5.6 22 8 13.8 2 9.2h7.6z"/></svg>
+            <span class="label">AI hỗ trợ</span>
+          </h2>
+          <button class="collapse-btn" id="collapseBtn" type="button" aria-label="Thu gọn / mở rộng bảng AI hỗ trợ">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <div class="rail-icons" id="railIcons"></div>
+        </div>
+
+        <div class="assistant-feed" id="assistantFeed" aria-live="polite">
+          <div class="feed-empty" id="feedEmpty">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 2l2.4 7.2H22l-6 4.6L18.4 22 12 17.4 5.6 22 8 13.8 2 9.2h7.6z"/></svg>
+            <p>Bấm các nút bên dưới hoặc bấm vào điểm số để xem gợi ý từ AI.</p>
+          </div>
+        </div>
+
+        <div class="assistant-actions" id="assistantActions">
+          <div class="actions-row">
+            <button class="action-btn blue" data-action="sample" type="button">
+              <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 4.5A2.5 2.5 0 016.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15z"/></svg></span>
+              Câu mẫu
+            </button>
+            <button class="action-btn amber" data-action="vocab" type="button">
+              <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18h6M10 22h4M15 2a6 6 0 00-4 10.47V15h8v-2.53A6 6 0 0015 2z"/></svg></span>
+              Từ vựng chủ đề
+            </button>
+          </div>
+          <button class="action-btn slate" data-action="note" type="button">
+            <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></span>
+            Ghi chú
+          </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="viewport-badge" id="viewportBadge">—</div>
+
+  <!-- ═══ Overlays / Modals dùng chung (ngoài app-shell) ═══ -->
+  <div class="modal-scrim" id="genericScrim"></div>
+  <div class="modal-panel" id="pronModal" role="dialog" aria-modal="true" aria-label="Phân tích chi tiết Phát âm"></div>
+  <div class="modal-panel" id="fluModal" role="dialog" aria-modal="true" aria-label="Phân tích chi tiết Trôi chảy và Mạch lạc"></div>
+  <div class="modal-panel" id="vocModal" role="dialog" aria-modal="true" aria-label="Phân tích chi tiết Từ vựng"></div>
+  <div class="modal-panel" id="gramModal" role="dialog" aria-modal="true" aria-label="Phân tích chi tiết Ngữ pháp"></div>
+  <div class="modal-panel size-md" id="coachModal" role="dialog" aria-modal="true" aria-label="Câu trả lời tốt hơn"></div>
+  <div class="modal-panel size-sm" id="drillModal" role="dialog" aria-modal="true" aria-label="Luyện phát âm theo từ"></div>
+  <div class="modal-panel size-sm" id="paywallModal" role="dialog" aria-modal="true" aria-label="Hết lượt chấm điểm"></div>
+
+  <div class="fix-popover" id="fixPopover" role="tooltip"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+  const shell = document.getElementById("appShell");
+  const body = document.getElementById("appBody");
+  const panel = document.getElementById("assistantPanel");
+  const feed = document.getElementById("assistantFeed");
+  const feedEmpty = document.getElementById("feedEmpty");
+  const backdrop = document.getElementById("backdrop");
+  const railIcons = document.getElementById("railIcons");
+  const collapseBtn = document.getElementById("collapseBtn");
+  const viewportBadge = document.getElementById("viewportBadge");
+  const mobileTabs = document.getElementById("mobileTabs");
+  const timeline = document.getElementById("timeline");
+  const timelineEmpty = document.getElementById("timelineEmpty");
+  const trendCard = document.getElementById("trendCard");
+  const micBtn = document.getElementById("micBtn");
+  const recLabel = document.getElementById("recLabel");
+  const simCase = document.getElementById("simCase");
+  const genericScrim = document.getElementById("genericScrim");
+  const fixPopover = document.getElementById("fixPopover");
+  const toastEl = document.getElementById("toast");
+  const quotaChip = document.getElementById("quotaChip");
+  const quotaText = document.getElementById("quotaText");
+
+  /* ═══════════════════════ DATA (rút gọn từ PRACTICE_OPTIMIZE_FULL_SPEC + practice-flow-optimized.html) ═══════════════════════ */
+
+  const PARTS = {
+    "Part 1": { topic: "Hometown", cue: false, questions: [
+      "Do you like advertisements?",
+      "Where is your hometown?",
+      "What do you like most about it?",
+      "Has it changed much in recent years?",
+      "Would you like to live there in the future?",
+    ] },
+    "Part 2": { topic: "Describe a person you admire", cue: true, questions: [
+      "Describe a person you admire.\nYou should say:\n• who this person is\n• how you know them\n• what they do\n• and explain why you admire them.",
+    ] },
+    "Part 3": { topic: "Education & Society", cue: false, questions: [
+      "How has education changed in your country?",
+      "Should education be free for everyone?",
+      "What role does technology play in learning?",
+      "Do you think exams are a fair way to assess students?",
+    ] },
+  };
+  const PART_KEYS = Object.keys(PARTS);
+
+  const CRITERION_META = {
+    fluency: { title: "Trôi chảy & Mạch lạc", tone: "tone-blue", color: "#1d4ed8" },
+    lexical: { title: "Từ vựng", tone: "tone-violet", color: "#7c3aed" },
+    pronunciation: { title: "Phát âm", tone: "tone-pink", color: "#db2777" },
+    grammar: { title: "Ngữ pháp", tone: "tone-amber", color: "#b45309" },
+  };
+  const CRITERION_KEYS = ["fluency", "lexical", "pronunciation", "grammar"];
+
+  // §5 — chuỗi điểm mô phỏng qua các lượt, để minh hoạ delta + trend.
+  const SCORE_SEQ = [
+    { overall: 6.0, fluency: 6.0, lexical: 6.0, grammar: 5.5, pronunciation: 6.5 },
+    { overall: 6.5, fluency: 6.5, lexical: 6.0, grammar: 6.0, pronunciation: 6.5 },
+    { overall: 6.5, fluency: 6.5, lexical: 6.5, grammar: 6.0, pronunciation: 6.0 },
+    { overall: 7.0, fluency: 7.0, lexical: 6.5, grammar: 6.5, pronunciation: 7.0 },
+  ];
+
+  // Câu trả lời gốc + track-changes: <FIX:sai|đúng|loại|giải thích>
+  const SENTENCE = 'My hometown is a small town near Hanoi. I <FIX:enjoy|cherish|Từ vựng|\'enjoy\' đúng nhưng cơ bản. \'cherish\' (C1) diễn đạt tình cảm gắn bó mạnh và tự nhiên hơn.> the peaceful atmosphere and the <FIX:friendly people|warm-hearted locals|Từ vựng|\'friendly people\' ổn nhưng phổ thông. \'warm-hearted locals\' nâng band từ vựng.> there. Whenever I <FIX:go|go back|Ngữ pháp|Thiếu trạng từ \'back\'. \'go back\' mới diễn đạt rõ ý quay về quê.>, I can finally relax.';
+
+  const OFFTOPIC_TRANSCRIPT = "Well, honestly I think online advertising is incredibly powerful nowadays. Many brands spend huge budgets on social media campaigns to reach younger audiences, and influencers really shape what people buy these days.";
+  const OFFTOPIC_SUBJECT = "quảng cáo";
+
+  // §6.2 Phát âm
+  const PRON = {
+    score: 6.5, goodPct: 58, fairPct: 27, needsPct: 15,
+    weakest: [
+      { word: "attracting", pct: 22, correct: "əˌtɹæktɪŋ", you: "əˌtɹækɪŋ", ctx: "…advertisements are <b>attracting</b> my attention…" },
+      { word: "enjoyable", pct: 31, correct: "ɛndʒɔɪəbl", you: "ɛnʒɔɪəbl", ctx: "…makes them less <b>enjoyable</b>." },
+      { word: "are", pct: 40, correct: "ɑɹ", you: "ɑ", ctx: "…sometimes they <b>are</b> entertaining…" },
+    ],
+    weakSound: "/ð/ /θ/ — âm \"th\"",
+    soundTip: "Đặt đầu lưỡi giữa hai hàm răng, cho hơi thoát ra; tránh thay bằng /d/ hoặc /s/.",
+    soundGroups: [
+      { sound: "/ð/ /θ/ — âm \"th\"", tip: "Đặt đầu lưỡi giữa hai hàm răng, cho hơi thoát ra; tránh thay bằng /d/ hoặc /s/.", words: ["the", "they"] },
+      { sound: "Nguyên âm /æ/", tip: "Mở miệng rộng, hạ hàm (như \"cat\"); tránh thành /e/ hay /ʌ/.", words: ["attracting", "advertisements"] },
+      { sound: "Âm cuối /ŋ/", tip: "Nâng cuống lưỡi chạm vòm mềm, cho hơi thoát qua mũi; tránh thêm /g/ rõ ở cuối \"-ing\".", words: ["enjoyable", "attracting"] },
+    ],
+    prosody: {
+      stress: [{ word: "advertisements", correct: "ad·VER·tise·ments", you: "AD·ver·tise·ments" }, { word: "attracting", correct: "at·TRACT·ing", you: "AT·tract·ing" }],
+      rhythm: "Nhịp nói khá đều nhưng trọng âm câu chưa nổi bật — nên nhấn vào từ khoá.",
+      intonation: "Ngữ điệu hơi phẳng ở cuối câu khẳng định; thử lên–xuống tự nhiên hơn.",
+    },
+  };
+  const PRON_WORDS = {
+    attracting: { meaning: "thu hút", model: ["ə", "t", "ɹ", "æ", "k", "t", "ɪ", "ŋ"], you: [["ə","ok"],["t","ok"],["ɹ","bad"],["æ","ok"],["k","ok"],["t","ok"],["ɪ","ok"],["ŋ","bad"]], target: "/ŋ/", guide: "Nâng cuống lưỡi chạm vòm mềm, cho hơi thoát qua mũi — âm mũi /ŋ/.", more: "Đuôi \"-ing\" nên là /ɪŋ/, tránh thêm /g/ rõ ở cuối." },
+    enjoyable: { meaning: "thú vị", model: ["ɛ", "n", "dʒ", "ɔɪ", "ə", "b", "l"], you: [["ɛ","ok"],["n","ok"],["dʒ","bad"],["ɔɪ","ok"],["ə","ok"],["b","ok"],["l","ok"]], target: "/dʒ/", guide: "Âm tắc-xát hữu thanh: chặn rồi bật như \"j\" trong job.", more: "Tránh phát thành /z/ hoặc /j/; bắt đầu bằng cách chặn lưỡi rồi bật có rung." },
+    are: { meaning: "thì, là", model: ["ɑ", "ɹ"], you: [["ɑ","ok"],["ɹ","bad"]], target: "/ɹ/", guide: "Cong nhẹ đầu lưỡi về phía sau, không chạm vòm miệng — âm /ɹ/ tiếng Anh.", more: "Bạn đang phát gần /r/ rung như tiếng Việt; với /ɹ/ lưỡi không rung, chỉ cong và giữ." },
+    the: { meaning: "mạo từ", model: ["ð", "ə"], you: [["d","bad"],["ə","ok"]], target: "/ð/", guide: "Đặt đầu lưỡi giữa hai hàm răng, cho hơi thoát ra liên tục (âm xát hữu thanh).", more: "Bạn đang phát gần /d/ (chặn hoàn toàn); với /ð/ hơi thoát liên tục qua khe hở giữa lưỡi và răng." },
+    they: { meaning: "họ", model: ["ð", "eɪ"], you: [["d","bad"],["eɪ","ok"]], target: "/ð/", guide: "Giữ đầu lưỡi giữa hai hàm răng khi bắt đầu âm.", more: "Tương tự \"the\" — tránh thay bằng /d/." },
+    advertisements: { meaning: "quảng cáo", model: ["æ","d","vər","taɪz","mənts"], you: [["æ","bad"],["d","ok"],["vər","ok"],["taɪz","ok"],["mənts","ok"]], target: "/æ/", guide: "Mở miệng rộng, hạ hàm như trong từ \"cat\".", more: "Bạn đang phát gần /e/, hàm chưa mở đủ rộng." },
+  };
+  function pronWordData(w) { return PRON_WORDS[(w || "").toLowerCase()] || { meaning: "", model: [], you: [], target: "", guide: "Nghe mẫu và lặp lại, chú ý khẩu hình.", more: "" }; }
+
+  // §6.1 Trôi chảy & Mạch lạc
+  const FLU = {
+    score: 6.5, wpm: 102, coherenceBadge: "Tròn ý nhưng chưa sâu", coherenceNote: "Cần đào sâu một ý với ví dụ cụ thể, tránh chỉ liệt kê chung chung.",
+    pauseBadge: "Ngắt nghỉ hơi dài", goodPause: 6, medPause: 2, longPause: 1, fillerCount: 1,
+    linkersUsed: ["and", "whenever"], linkerSuggest: "besides, as a result, for instance",
+  };
+
+  // §6.3 Từ vựng
+  const VOC = {
+    score: 6.0, badge: "Chủ yếu A1–B1", note: "Đa số là từ cơ bản — thêm từ B2+ và collocation chuyên đề để nâng band Từ vựng.",
+    cefr: { A1: 40, A2: 22, B1: 24, B2: 10, C1: 4, C2: 0 },
+    cefrColors: { A1: "#64748b", A2: "#22c55e", B1: "#3b82f6", B2: "#f59e0b", C1: "#f97316", C2: "#ef4444" },
+    tips: [
+      { word: "small", alts: ["tiny", "compact", "modest"] },
+      { word: "really", alts: ["genuinely", "truly", "thoroughly"] },
+      { word: "peaceful", alts: ["tranquil", "serene", "idyllic"] },
+      { word: "relax", alts: ["unwind", "de-stress", "recharge"] },
+    ],
+  };
+
+  // §6.4 Ngữ pháp
+  const GRAM = {
+    score: 6.0, badge: "Cơ bản ổn — ít câu phức",
+    accurateSentences: 3, totalSentences: 4, simplePct: 65, complexPct: 35,
+    errorTypes: [{ label: "Thì động từ", count: 2 }, { label: "Mạo từ (a/the)", count: 1 }, { label: "Giới từ", count: 1 }],
+    structures: [
+      { name: "Mệnh đề quan hệ (who/which)", status: "ok" },
+      { name: "Câu điều kiện loại 1", status: "ok" },
+      { name: "Câu điều kiện loại 2", status: "fail" },
+      { name: "Câu bị động", status: "todo" },
+      { name: "Đảo ngữ / Cleft", status: "todo" },
+    ],
+    sentences: [
+      { text: "My hometown is a small town near Hanoi.", ok: true, type: "simple" },
+      { text: "I really enjoy the peaceful atmosphere and the friendly people there.", ok: true, type: "complex" },
+      { text: "Whenever I go back, I can finally relax.", ok: true, type: "complex" },
+      { text: "It is the place where I grew up and make many memories.", ok: false, type: "complex" },
+    ],
+    suggestions: [
+      { tip: "Thêm mệnh đề quan hệ", ex: "…the locals, who always greet you with a smile." },
+      { tip: "Dùng câu điều kiện loại 2", ex: "If I had more time, I would visit more often." },
+    ],
+  };
+
+  // §7 Coach (Cải thiện câu — 3 mục tiêu)
+  const IMP_CAT = { vocab: { c: "#7c3aed", label: "Từ vựng" }, grammar: { c: "#b45309", label: "Ngữ pháp" }, cohesion: { c: "#059669", label: "Liên kết / Ý" }, colloc: { c: "#a855f7", label: "Collocation" } };
+  const IMPROVE = {
+    vocab: {
+      label: "Nâng từ vựng", color: "#2563eb", target: "7.0",
+      answer: "My hometown is a small town near Hanoi. I <U:vocab|genuinely cherish|'really enjoy' (A2) → 'genuinely cherish' (C1): diễn đạt tình cảm gắn bó mạnh và tự nhiên hơn> its <U:colloc|tranquil atmosphere|collocation tự nhiên thay cho 'peaceful atmosphere'> and the <U:vocab|warm-hearted locals|'friendly people' → 'warm-hearted locals' (C1): chính xác & nâng band>.",
+      changes: [{ cat: "vocab", text: "enjoy → cherish · peaceful → tranquil" }, { cat: "colloc", text: "tranquil atmosphere · warm-hearted locals" }],
+      phrases: ["genuinely cherish", "tranquil atmosphere", "warm-hearted locals"],
+      trans: "Quê tôi là một thị trấn nhỏ gần Hà Nội. Tôi thực sự trân trọng bầu không khí yên bình và những người dân ấm áp nơi đây.",
+    },
+    grammar: {
+      label: "Đa dạng ngữ pháp", color: "#d97706", target: "7.0",
+      answer: "My hometown is a small town near Hanoi, <U:grammar|which I cherish for its peaceful atmosphere|thêm mệnh đề quan hệ 'which…' để gộp 2 câu đơn thành 1 câu phức>. <U:grammar|Whenever I go back, I feel as if I can finally unwind|mệnh đề thời gian 'whenever' + cấu trúc so sánh 'as if'>.",
+      changes: [{ cat: "grammar", text: "Gộp câu phức bằng mệnh đề quan hệ 'which…'" }, { cat: "grammar", text: "Mệnh đề thời gian 'whenever' + 'as if'" }],
+      phrases: ["which I cherish", "as if I can", "whenever I go back"],
+      trans: "Quê tôi là một thị trấn nhỏ gần Hà Nội, nơi tôi yêu vì bầu không khí yên bình. Mỗi lần về, tôi như được thư giãn hoàn toàn.",
+    },
+    depth: {
+      label: "Phát triển ý sâu", color: "#059669", target: "7.0",
+      answer: "My hometown is a small town near Hanoi. I really enjoy its peaceful atmosphere — <U:cohesion|for instance, every morning I hear birds singing instead of traffic|thêm ví dụ cụ thể để phát triển ý, tránh nói chung chung>. <U:cohesion|That is why I always feel recharged whenever I visit|liên kết 'that is why' + nêu lý do, tăng mạch lạc>.",
+      changes: [{ cat: "cohesion", text: "Thêm ví dụ cụ thể (for instance…)" }, { cat: "cohesion", text: "Liên kết & nêu lý do (that is why…)" }],
+      phrases: ["for instance", "that is why", "feel recharged"],
+      trans: "Quê tôi là một thị trấn nhỏ gần Hà Nội. Tôi rất thích bầu không khí yên bình — ví dụ, mỗi sáng tôi nghe tiếng chim hót thay vì tiếng xe cộ. Vì vậy tôi luôn thấy được nạp lại năng lượng mỗi khi về.",
+    },
+  };
+
+  // §8 Edge cases
+  const ERR = {
+    A1: { icon: "mic-off", tone: "tone-rose", heading: "Chưa truy cập được micro", msg: "Trình duyệt đang chặn micro. Hãy cấp quyền micro cho 9Speak rồi thử lại.", tip: "Mẹo: bấm biểu tượng khoá 🔒 trên thanh địa chỉ → Cho phép Micro.", actions: [{ label: "Hướng dẫn cấp quyền", primary: true, act: "micHelp" }, { label: "Thử lại", act: "retryRecord" }] },
+    A2: { icon: "mic-off", tone: "tone-rose", heading: "Không tìm thấy micro", msg: "Thiết bị chưa có micro hoặc trình duyệt không hỗ trợ ghi âm. Kiểm tra micro hoặc dùng Chrome/Safari mới nhất.", actions: [{ label: "Thử lại", primary: true, act: "retryRecord" }] },
+    B1: { icon: "timer", tone: "tone-amber", heading: "Đoạn ghi quá ngắn", msg: "", actions: [{ label: "Ghi âm lại", primary: true, act: "retryRecord" }] },
+    B2: { icon: "volume-x", tone: "tone-slate", heading: "Không nghe thấy giọng nói", msg: "AI không phát hiện được giọng nói. Kiểm tra micro, nói to & rõ hơn rồi thử lại.", actions: [{ label: "Ghi âm lại", primary: true, act: "retryRecord" }] },
+    B3: { icon: "alert-triangle", tone: "tone-amber", heading: "Âm thanh bị nhiễu", msg: "Nhiều tạp âm nền khiến AI khó nhận diện. Hãy đến nơi yên tĩnh và thử lại.", actions: [{ label: "Ghi âm lại", primary: true, act: "retryRecord" }] },
+    B5: { icon: "languages", tone: "tone-indigo", heading: "Có vẻ bạn chưa nói tiếng Anh", msg: "AI nhận diện câu trả lời không phải tiếng Anh nên chưa thể chấm. Hãy trả lời bằng tiếng Anh và thử lại.", actions: [{ label: "Ghi âm lại", primary: true, act: "retryRecord" }] },
+    C1: { icon: "target", tone: "tone-amber", heading: "Câu trả lời có vẻ lệch đề", msg: "Nội dung chưa khớp với câu hỏi. Hãy xem lại đề bài và trả lời sát hơn rồi thử lại.", actions: [{ label: "Ghi âm lại", primary: true, act: "retryRecord" }] },
+  };
+  const ICONS = {
+    "mic-off": '<path d="M1 1l22 22"/><path d="M9 9v3a3 3 0 005 2.24M15 9.34V4a3 3 0 00-5.94-.6"/><path d="M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23"/><path d="M12 19v4"/>',
+    "timer": '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9 2h6"/>',
+    "volume-x": '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M23 9l-6 6M17 9l6 6"/>',
+    "alert-triangle": '<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/>',
+    "languages": '<path d="M5 8l6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/>',
+    "target": '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  };
+
+  // Trạng thái quota (demo) — practice_scoring_charges
+  const QUOTA_START = 5;
+  let quotaLeft = QUOTA_START;
+  function renderQuota() {
+    quotaText.textContent = quotaLeft > 0 ? `${quotaLeft} lượt chấm hôm nay` : "Đã hết lượt chấm hôm nay";
+    quotaChip.dataset.low = quotaLeft > 0 && quotaLeft <= 2 ? "true" : "false";
+    quotaChip.dataset.empty = quotaLeft <= 0 ? "true" : "false";
+  }
+
+  /* ═══════════════════════ STATE ═══════════════════════ */
+  const state = { items: [], bp: "wide", expanded: false, collapsed: false };
+  let curPartIdx = 0;
+  let curQ = 0;
+  let attempts = [];
+  let recState = "idle"; // idle | recording | processing | scored
+  let recSec = 0;
+  let recTimer = null;
+  let qPlaying = false;
+  let lastFocusedEl = null;
+  const REC_MAX = 8; // giây — rút gọn cho demo (thực tế Part1/3: 90s, Part2: 120s)
+
+  function curPartKey() { return PART_KEYS[curPartIdx]; }
+  function curPartData() { return PARTS[curPartKey()]; }
+
+  /* ═══════════════════════ Helpers ═══════════════════════ */
+  function fmtDelta(d) { return Math.abs(d).toFixed(1).replace(/\.0$/, ""); }
+  function deltaChipHtml(d, size) {
+    const cls = d > 0 ? "up" : d < 0 ? "down" : "flat";
+    const arrow = d > 0 ? "▲" : d < 0 ? "▼" : "–";
+    const txt = d === 0 ? "0" : `${arrow} ${fmtDelta(d)}`;
+    return `<span class="${size === "mini" ? "mini-delta" : "delta-chip"} ${cls}">${txt}</span>`;
+  }
+  function fmtSec(s) { return "0:" + String(s).padStart(2, "0"); }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("visible");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toastEl.classList.remove("visible"), 2600);
+  }
+
+  /* ═══════════════════════ Header / Part / Question navigation ═══════════════════════ */
+  function renderHeader() {
+    const pd = curPartData();
+    document.getElementById("partBadge").textContent = curPartKey();
+    document.getElementById("topicLabel").textContent = pd.topic;
+    document.getElementById("stepBadge").textContent = `Câu ${curQ + 1} / ${pd.questions.length}`;
+    const q = pd.questions[curQ];
+    const qEl = document.getElementById("questionText");
+    if (pd.cue) {
+      qEl.innerHTML = escapeHtml(q).replace(/\n/g, "<br>");
+      qEl.classList.add("cue-card");
+    } else {
+      qEl.textContent = `"${q}"`;
+      qEl.classList.remove("cue-card");
+    }
+    document.getElementById("prepNote").hidden = !pd.cue;
+    document.getElementById("prevBtn").disabled = curQ === 0;
+    document.getElementById("nextBtn").disabled = curQ === pd.questions.length - 1;
+  }
+
+  document.getElementById("partBadge").addEventListener("click", () => {
+    curPartIdx = (curPartIdx + 1) % PART_KEYS.length;
+    curQ = 0;
+    resetForNewQuestion();
+  });
+  document.getElementById("prevBtn").addEventListener("click", () => { if (curQ > 0) { curQ--; resetForNewQuestion(); } });
+  document.getElementById("nextBtn").addEventListener("click", () => { if (curQ < curPartData().questions.length - 1) { curQ++; resetForNewQuestion(); } });
+  document.getElementById("playQBtn").addEventListener("click", (e) => {
+    qPlaying = true;
+    e.currentTarget.classList.add("is-playing");
+    setTimeout(() => { qPlaying = false; e.currentTarget.classList.remove("is-playing"); }, 1300);
+  });
+  document.getElementById("backBtn").addEventListener("click", () => showToast("(Demo) Sẽ quay lại màn chọn đề — xem ui-demo/mock-test-chon-de.html"));
+
+  function resetForNewQuestion() {
+    attempts = [];
+    resetRecState();
+    renderHeader();
+    renderTimeline();
+    // Feed AI hỗ trợ: reset nội dung nhưng GIỮ trạng thái thu gọn/mở của panel (theo SPEC.md mục 4).
+    state.items = [];
+    feed.querySelectorAll(".feed-card").forEach((n) => n.remove());
+    syncEmptyState();
+    refreshActionButtons();
+  }
+
+  /* ═══════════════════════ Recording state machine ═══════════════════════ */
+  function resetRecState() { recState = "idle"; clearInterval(recTimer); recSec = 0; syncMic(); }
+  function syncMic() {
+    micBtn.dataset.state = recState;
+    micBtn.disabled = recState === "processing";
+    micBtn.innerHTML = recState === "recording"
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>'
+      : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/></svg>';
+    micBtn.setAttribute("aria-label", recState === "recording" ? "Dừng ghi âm" : recState === "processing" ? "Đang chấm điểm" : (attempts.some((a) => a.type === "result") ? "Ghi âm lại" : "Bắt đầu ghi âm"));
+    updateRecLabel();
+  }
+  function updateRecLabel() {
+    recLabel.classList.remove("warn");
+    if (recState === "recording") {
+      const left = REC_MAX - recSec;
+      if (left <= 3) { recLabel.textContent = `Đang ghi · ${fmtSec(recSec)} · tự dừng sau ${left}s`; recLabel.classList.add("warn"); }
+      else recLabel.textContent = `Đang ghi · ${fmtSec(recSec)} / tối đa ${fmtSec(REC_MAX)}`;
+    } else if (recState === "processing") recLabel.textContent = "Đang chấm điểm…";
+    else recLabel.textContent = attempts.some((a) => a.type === "result") ? "Ghi âm lại" : "Bắt đầu ghi âm";
+  }
+
+  micBtn.addEventListener("click", () => {
+    if (recState === "recording") { stopRec("manual"); return; }
+    if (recState !== "idle" && recState !== "scored") return;
+    const sim = simCase.value;
+    if (sim === "quota" || quotaLeft <= 0) { openPaywallModal(); return; }
+    if (sim === "A1" || sim === "A2") { pushError(sim); return; }
+    startRec();
+  });
+
+  function startRec() {
+    recState = "recording"; recSec = 0; syncMic(); renderTimeline();
+    recTimer = setInterval(() => {
+      recSec++;
+      if (recSec >= REC_MAX) { stopRec("auto"); return; }
+      updateRecLabel();
+      renderTimelineTail();
+    }, 1000);
+  }
+  function stopRec(reason) {
+    clearInterval(recTimer);
+    const sim = simCase.value;
+    if (sim === "B1" || (reason === "manual" && recSec < 3)) { pushError("B1", recSec); return; }
+    recState = "processing"; syncMic(); renderTimeline();
+    const auto = reason === "auto";
+    setTimeout(() => {
+      if (["B2", "B3", "B5", "C1"].includes(sim)) { pushError(sim); return; }
+      recState = "scored";
+      const prevResults = attempts.filter((x) => x.type === "result");
+      const prevScores = prevResults.length ? prevResults[prevResults.length - 1].scores : null;
+      const scores = SCORE_SEQ[prevResults.length % SCORE_SEQ.length];
+      attempts.forEach((x) => { x.expanded = false; });
+      quotaLeft = Math.max(0, quotaLeft - 1);
+      renderQuota();
+      attempts.push({ id: attempts.length + 1, type: "result", corrDone: false, expanded: true, autoStopped: auto, scores, prevScores });
+      syncMic();
+      renderTimeline();
+      const attemptId = attempts.length;
+      setTimeout(() => {
+        const a = attempts.find((x) => x.id === attemptId);
+        if (a) { a.corrDone = true; renderTimeline(); }
+      }, 1800);
+    }, 1500);
+  }
+  function pushError(key, sec) {
+    recState = "idle"; syncMic();
+    attempts.push({ id: attempts.length + 1, type: "error", errKey: key, recSec: sec || recSec });
+    renderTimeline();
+  }
+  window.retryRecord = function () { resetRecState(); renderTimeline(); timeline.scrollTop = timeline.scrollHeight; };
+  window.micHelp = function () { showToast("Bấm biểu tượng khoá 🔒 cạnh thanh địa chỉ → Micro → Cho phép, rồi tải lại trang."); };
+
+  /* ═══════════════════════ Timeline render ═══════════════════════ */
+  function renderTimelineTail() {
+    // chỉ cập nhật phần "đang ghi" (waveform) mà không render lại toàn bộ — giữ mượt khi đếm giây
+    const tail = timeline.querySelector('[data-tail="recording"]');
+    if (tail) return; // waveform tự animate qua CSS, không cần re-render mỗi giây
+  }
+
+  function renderTimeline() {
+    const hasContent = attempts.length > 0 || recState === "recording" || recState === "processing";
+    timelineEmpty.style.display = hasContent ? "none" : "flex";
+    timeline.querySelectorAll(".attempt-block, [data-tail]").forEach((n) => n.remove());
+
+    attempts.forEach((a) => {
+      const block = document.createElement("div");
+      block.className = "attempt-block";
+      if (a.type === "error" && a.errKey === "C1") {
+        block.innerHTML = offTopicBlockHtml(a);
+      } else if (a.type === "error") {
+        block.innerHTML = errorBlockHtml(a);
+      } else {
+        block.innerHTML = resultBlockHtml(a);
+      }
+      timeline.appendChild(block);
+      wireAttemptBlock(block, a);
+    });
+
+    if (recState === "recording") {
+      const tail = document.createElement("div");
+      tail.dataset.tail = "recording";
+      tail.innerHTML = `<div class="rec-waveform">${[34, 52, 74, 46, 68, 88, 62, 40].map((h, i) => `<span style="height:${h}%;animation-delay:${(i * 0.05).toFixed(2)}s"></span>`).join("")}</div>`;
+      timeline.appendChild(tail);
+    }
+    if (recState === "processing") {
+      const tail = document.createElement("div");
+      tail.dataset.tail = "processing";
+      tail.innerHTML = `<div class="processing-bubble"><svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 11-3-6.7"/></svg> AI đang phân tích &amp; chấm điểm câu trả lời...</div>`;
+      timeline.appendChild(tail);
+    }
+    timeline.scrollTop = timeline.scrollHeight;
+    renderTrend();
+  }
+
+  function renderTrend() {
+    const results = attempts.filter((a) => a.type === "result");
+    if (results.length < 2) { trendCard.hidden = true; return; }
+    trendCard.hidden = false;
+    const vals = results.map((r) => r.scores.overall);
+    const n = vals.length, W = n * 46 + 20, H = 44, pad = 14;
+    const min = Math.min(...vals) - 0.4, max = Math.max(...vals) + 0.4, rng = max - min || 1;
+    const x = (i) => pad + i * ((W - pad * 2) / Math.max(1, n - 1));
+    const y = (v) => H - 8 - ((v - min) / rng) * (H - 18);
+    const pts = vals.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+    const dots = vals.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="#4f46e5"/><text x="${x(i)}" y="${y(v) - 7}" font-size="9" fill="#475569" text-anchor="middle">${v.toFixed(1)}</text>`).join("");
+    const dd = +(vals[n - 1] - vals[0]).toFixed(1);
+    const cls = dd > 0 ? "up" : dd < 0 ? "down" : "flat";
+    trendCard.innerHTML = `
+      <span class="lbl">Tiến bộ<br>band tổng</span>
+      <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><polyline points="${pts}" fill="none" stroke="#c7d2fe" stroke-width="2"/>${dots}</svg>
+      <span class="delta"><span class="count">Lần 1 → ${n}</span><br><span class="val" style="color:${dd > 0 ? "#059669" : dd < 0 ? "#e11d48" : "#64748b"}">${dd > 0 ? "+" : ""}${dd} band</span></span>`;
+  }
+
+  function errorBlockHtml(a) {
+    const e = ERR[a.errKey];
+    const msg = a.errKey === "B1" ? `Câu trả lời chỉ dài ${a.recSec || 0}s. Hãy nói ít nhất 3 giây để AI chấm điểm chính xác.` : e.msg;
+    const recorded = !["A1", "A2"].includes(a.errKey);
+    const userBubble = recorded ? `<div class="user-bubble"><div class="ub-label">Lần ${a.id}</div><div class="rec-mini"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/></svg> Bản ghi ${a.recSec || 0}s</div></div>` : "";
+    return `${userBubble}
+      <div class="error-card ${e.tone}">
+        <div class="ic">${iconSvg(e.icon)}</div>
+        <div style="flex:1">
+          <p class="heading">${e.heading}</p>
+          <p class="msg">${msg}</p>
+          ${e.tip ? `<p class="tip">${e.tip}</p>` : ""}
+          <div class="actions">${e.actions.map((ac) => `<button type="button" class="${ac.primary ? "primary" : "secondary"}" data-act="${ac.act}">${ac.label}</button>`).join("")}</div>
+        </div>
+      </div>`;
+  }
+  function offTopicBlockHtml(a) {
+    const q = curPartData().questions[curQ] || "";
+    const firstLine = q.split("\n")[0];
+    return `<div class="user-bubble"><div class="ub-label">Lần ${a.id}</div><p>${escapeHtml(OFFTOPIC_TRANSCRIPT)}</p></div>
+      <div class="offtopic-card">
+        <div class="title">Off-Topic: Đọc kỹ câu hỏi nha</div>
+        <p>Câu trả lời đang nói về <b>${OFFTOPIC_SUBJECT}</b>, không liên quan đến câu hỏi: <i>"${escapeHtml(firstLine)}"</i>. Hãy đọc kỹ đề và trả lời đúng trọng tâm rồi bấm 🎙️ để ghi âm lại nhé.</p>
+        <div class="actions" style="justify-content:center"><button type="button" class="primary" data-act="retryRecord" style="border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;border:1px solid transparent;background:var(--color-primary);color:#fff">Ghi âm lại</button></div>
+      </div>`;
+  }
+
+  function iconSvg(key) { return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">${ICONS[key] || ""}</svg>`; }
+
+  function resultBlockHtml(a) {
+    const sc = a.scores, prev = a.prevScores;
+    const labelExtra = a.autoStopped ? `<span class="autostop">${iconSvg("timer")} Đã tự dừng ở giới hạn</span>` : "";
+    if (!a.expanded) {
+      return `<div class="attempt-label">Lần ${a.id}${labelExtra}</div>
+        <div class="attempt-collapsed-summary" data-role="collapsed-summary">
+          <span class="total" style="color:${scoreColor(sc.overall)}">${sc.overall.toFixed(1)}</span>
+          ${prev ? deltaChipHtml(+(sc.overall - prev.overall).toFixed(1)) : ""}
+          <span class="note">${encourageShort(sc, prev)}</span>
+          <button type="button" class="expand-toggle-btn" data-act="toggleExpand" data-id="${a.id}" style="margin-left:auto">Mở rộng ▾</button>
+        </div>`;
+    }
+    const miniScoreCards = CRITERION_KEYS.map((key) => {
+      const meta = CRITERION_META[key];
+      const val = sc[key];
+      const d = prev ? +(val - prev[key]).toFixed(1) : null;
+      const isActive = state.items.some((i) => i.id === `criterion:${key}`);
+      return `<button type="button" class="score-chip is-clickable ${meta.tone}" data-act="toggleCriterion" data-key="${key}" data-attempt="${a.id}" aria-pressed="${isActive}" data-active="${isActive}">
+        <span class="row"><span class="k">${meta.title}</span></span>
+        <span class="v-wrap"><span class="v">${val.toFixed(1)}</span>${d !== null ? deltaChipHtml(d, "mini") : ""}</span>
+      </button>`;
+    }).join("");
+    return `<div class="attempt-label">Lần ${a.id}${labelExtra}</div>
+      <div class="eval-card">
+        <div class="band-header">
+          <div class="band-header-top">
+            <div class="band-header-left"><span class="ic">${iconSvg2Star()}</span><span class="lbl">AI Chấm điểm</span></div>
+            <div class="band-header-right"><span class="total" style="color:${scoreColor(sc.overall)}">${sc.overall.toFixed(1)}</span>${prev ? deltaChipHtml(+(sc.overall - prev.overall).toFixed(1)) : ""}</div>
+          </div>
+          <div class="mini-score-grid">${miniScoreCards}</div>
+        </div>
+        ${prev ? `<div class="encourage-line ${encourageClass(sc, prev)}">${encourageLine(sc, prev)}</div>` : ""}
+        <p class="score-hint">Bấm vào từng tiêu chí để xem phân tích chi tiết ở cột AI hỗ trợ →</p>
+        <div class="corrected-box">
+          <div class="cb-head"><span class="ic">${iconSvg("spell") || spellIcon()}</span> Câu trả lời của bạn — đã sửa lỗi</div>
+          ${a.corrDone ? `
+            <div class="corrected-text">${correctedSentenceHtml(a)}</div>
+            <div class="legend-row"><span><span class="fix-del">gạch bỏ</span> = lỗi</span><span><span class="fix-ins">thay thế</span> = bản sửa</span><span>· bấm vào chỗ sửa để xem giải thích</span></div>
+          ` : `
+            <div class="skeleton-lines"><div class="sk" style="width:100%"></div><div class="sk" style="width:92%"></div><div class="sk" style="width:70%"></div><p class="caption">AI đang phân tích &amp; sửa lỗi từ vựng / ngữ pháp…</p></div>
+          `}
+        </div>
+        <div>
+          <div class="coach-trigger-label">Cải thiện câu trả lời</div>
+          <div class="coach-trigger-grid">
+            <button type="button" class="blue" data-act="doImprove" data-goal="vocab" data-attempt="${a.id}" ${a.corrDone ? "" : "disabled"}>Nâng từ vựng</button>
+            <button type="button" class="amber" data-act="doImprove" data-goal="grammar" data-attempt="${a.id}" ${a.corrDone ? "" : "disabled"}>Đa dạng ngữ pháp</button>
+            <button type="button" class="emerald" data-act="doImprove" data-goal="depth" data-attempt="${a.id}" ${a.corrDone ? "" : "disabled"}>Phát triển ý sâu</button>
+          </div>
+          <p class="coach-hint">Kết quả + cách nâng cấp hiện ở cột AI hỗ trợ →</p>
+        </div>
+        <div class="expand-toggle-row"><button type="button" class="expand-toggle-btn" data-act="toggleExpand" data-id="${a.id}">Thu gọn <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg></button></div>
+      </div>`;
+  }
+  function iconSvg2Star() { return '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 7.2H22l-6 4.6L18.4 22 12 17.4 5.6 22 8 13.8 2 9.2h7.6z"/></svg>'; }
+  function spellIcon() { return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>'; }
+  function scoreColor(v) { return v >= 7 ? "#059669" : v >= 6 ? "#1e293b" : "#d97706"; }
+
+  function encourageClass(sc, prev) { const d = +(sc.overall - prev.overall).toFixed(1); return d > 0 ? "up" : d < 0 ? "down" : "flat"; }
+  function encourageLine(sc, prev) {
+    const d = +(sc.overall - prev.overall).toFixed(1);
+    if (d > 0) return `🎉 Tiến bộ! Band tổng +${fmtDelta(d)} so với lần trước — giữ phong độ nhé!`;
+    if (d < 0) return `Band tổng giảm ${fmtDelta(d)} so với lần trước — đừng nản, thử lại để cải thiện nhé! 💪`;
+    const ups = CRITERION_KEYS.filter((k) => sc[k] > prev[k]).map((k) => CRITERION_META[k].title);
+    const downs = CRITERION_KEYS.filter((k) => sc[k] < prev[k]).map((k) => CRITERION_META[k].title);
+    let detail = "";
+    if (ups.length) detail += ` ↑ ${ups.join(", ")}`;
+    if (downs.length) detail += `${ups.length ? " · " : " "}↓ ${downs.join(", ")}`;
+    return `Band tổng giữ nguyên so với lần trước.${detail || " Cố thêm chút nữa nhé!"}`;
+  }
+  function encourageShort(sc, prev) {
+    if (!prev) return "Lượt đầu tiên";
+    const d = +(sc.overall - prev.overall).toFixed(1);
+    return d > 0 ? "Tiến bộ so với lần trước" : d < 0 ? "Giảm so với lần trước" : "Giữ nguyên so với lần trước";
+  }
+
+  let FIX_DATA = [];
+  function correctedSentenceHtml(a) {
+    FIX_DATA = [];
+    return SENTENCE.replace(/<FIX:([^|]+)\|([^|]+)\|([^|]+)\|([^>]+)>/g, (m, wrong, right, label, explain) => {
+      const idx = FIX_DATA.length;
+      FIX_DATA.push({ wrong, right, label, explain });
+      return `<span class="fix-del">${escapeHtml(wrong)}</span> <button type="button" class="fix-ins" data-act="showFix" data-idx="${idx}">${escapeHtml(right)}</button>`;
+    });
+  }
+
+  function wireAttemptBlock(block, a) {
+    block.querySelectorAll("[data-act]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        const act = el.dataset.act;
+        if (act === "retryRecord") window.retryRecord();
+        else if (act === "micHelp") window.micHelp();
+        else if (act === "toggleExpand") { const target = attempts.find((x) => x.id === +el.dataset.id); target.expanded = !target.expanded; renderTimeline(); }
+        else if (act === "toggleCriterion") { const key = el.dataset.key; toggleCriterion(key, a); }
+        else if (act === "showFix") showFix(e, +el.dataset.idx);
+        else if (act === "doImprove") doImprove(el.dataset.goal, a);
+      });
+    });
+  }
+
+  function showFix(e, idx) {
+    e.stopPropagation();
+    const d = FIX_DATA[idx];
+    if (!d) return;
+    fixPopover.innerHTML = `<div class="fp-cat" style="background:#f1f5f9;color:#475569">${d.label}</div>
+      <div class="fp-diff"><span class="fix-del">${escapeHtml(d.wrong)}</span> → <span style="font-weight:700;color:#047857">${escapeHtml(d.right)}</span></div>
+      <p>${escapeHtml(d.explain)}</p>`;
+    positionPopover(e, e.currentTarget);
+    lastFocusedEl = e.currentTarget;
+  }
+  function positionPopover(e, anchorEl) {
+    fixPopover.classList.add("visible");
+    let cx = e.clientX, cy = e.clientY;
+    // e.detail === 0 → click phát sinh từ bàn phím (Enter/Space), không phải chuột thật — clientX/Y không đáng tin.
+    // Neo popover theo vị trí nút thay vì góc màn hình.
+    if (e.detail === 0 && anchorEl) {
+      const r = anchorEl.getBoundingClientRect();
+      cx = r.left + r.width / 2;
+      cy = r.bottom;
+    }
+    const x = Math.max(8, Math.min(cx + 10, window.innerWidth - 280));
+    const y = Math.max(8, Math.min(cy + 12, window.innerHeight - 160));
+    fixPopover.style.left = x + "px";
+    fixPopover.style.top = y + "px";
+  }
+  document.addEventListener("click", (e) => {
+    if (fixPopover.classList.contains("visible") && !fixPopover.contains(e.target) && !e.target.closest("[data-act='showFix']") && !e.target.closest("[data-act='showImpTag']")) {
+      fixPopover.classList.remove("visible");
+    }
+  });
+
+  /* ═══════════════════════ Assistant feed (rail) ═══════════════════════ */
+  function cardBodyFor(item) {
+    const key = item.key;
+    if (item.kind === "criterion") {
+      if (key === "pronunciation") return pronCardHtml(item);
+      if (key === "fluency") return fluCardHtml(item);
+      if (key === "lexical") return vocCardHtml(item);
+      if (key === "grammar") return gramCardHtml(item);
+    }
+    if (item.kind === "sample") {
+      return `<p class="body-text" style="font-style:italic">"Personally, I find advertisements quite persuasive — they're designed to catch your attention within seconds, and the best ones tell a short story rather than just listing features."</p>`;
+    }
+    if (item.kind === "vocab") {
+      return `<div class="vocab-grid">
+        <div class="vocab-item"><b>eye-catching</b><span>bắt mắt, dễ thu hút</span></div>
+        <div class="vocab-item"><b>persuasive</b><span>có sức thuyết phục</span></div>
+        <div class="vocab-item"><b>brand awareness</b><span>độ nhận diện thương hiệu</span></div>
+      </div>`;
+    }
+    if (item.kind === "note") {
+      return `<textarea class="note-input" aria-label="Ghi chú" placeholder="Ghi nhanh idea, từ mới, cấu trúc muốn thử ở lượt tiếp theo...">${item.noteValue || ""}</textarea>`;
+    }
+    if (item.kind === "rewrite") return coachCardHtml(item);
+    return "";
+  }
+
+  function pronCardHtml(item) {
+    const top = PRON.weakest.slice(0, 3);
+    return `<div class="insight-score-line" style="color:${CRITERION_META.pronunciation.color}">Điểm tiêu chí: <b>${item.score.toFixed(1)}</b></div>
+      <div class="dist-row"><span class="good">Tốt ${PRON.goodPct}%</span><span class="fair">Khá ${PRON.fairPct}%</span><span class="needs">Yếu ${PRON.needsPct}%</span></div>
+      <div class="subhead">Từ cần sửa nhất</div>
+      ${top.map((m) => `<div class="weak-word-row"><button type="button" data-act="openDrill" data-word="${m.word}">"${m.word}"</button><span style="font-weight:700;color:${m.pct < 50 ? "#be123c" : m.pct < 75 ? "#b45309" : "#059669"}">${m.pct}%</span></div>`).join("")}
+      <div class="weak-sound-note"><b>Âm yếu nhất:</b> ${PRON.weakSound}</div>
+      <button type="button" class="full-btn" style="margin-top:10px;width:100%" data-act="openModal" data-modal="pron">⛶ Xem lỗi, nhóm âm &amp; ngữ điệu đầy đủ</button>`;
+  }
+  function fluCardHtml(item) {
+    const wpm = FLU.wpm;
+    return `<div class="insight-score-line" style="color:${CRITERION_META.fluency.color}">Điểm tiêu chí: <b>${item.score.toFixed(1)}</b></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:12px;font-weight:600;color:#334155">Mạch lạc</span><span class="badge-pill" style="background:#ccfbf1;color:#0f766e">${FLU.coherenceBadge}</span></div>
+      <p style="font-size:11px;color:var(--color-muted);margin:4px 0 0">${FLU.coherenceNote}</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:8px"><span style="font-size:12px;font-weight:600;color:#334155">Trôi chảy</span><span class="badge-pill" style="background:#1e293b;color:#fff">${FLU.pauseBadge}</span></div>
+      <div style="margin-top:8px;border-radius:10px;background:#f8fafc;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;font-size:12px"><span>⚡ Tốc độ nói</span><span><b style="color:#4f46e5">${wpm}</b> từ/phút</span></div>
+      <div class="dist-row" style="margin-top:8px"><span class="good">🟢 ${FLU.goodPause} tốt</span><span class="fair">🟡 ${FLU.medPause} vừa</span><span class="needs">🔴 ${FLU.longPause} dài</span></div>
+      <button type="button" class="full-btn" style="margin-top:10px;width:100%" data-act="openModal" data-modal="flu">⛶ Xem transcript ngắt nghỉ &amp; nghe lại</button>`;
+  }
+  function vocCardHtml(item) {
+    const topTips = VOC.tips.slice(0, 2).map((t) => `<div class="vocab-tip-mini"><b>${t.word}</b> <span class="arrow">→</span> <span class="alt">${t.alts.slice(0, 2).join(", ")}</span></div>`).join("");
+    return `<div class="insight-score-line" style="color:${CRITERION_META.lexical.color}">Điểm tiêu chí: <b>${item.score.toFixed(1)}</b></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:12px;font-weight:600;color:#334155">Cấp độ từ vựng</span><span class="badge-pill" style="background:#fef3c7;color:#92400e">${VOC.badge}</span></div>
+      ${Object.keys(VOC.cefr).map((lv) => `<div class="cefr-row"><span class="lv" style="background:${VOC.cefrColors[lv]}">${lv}</span><span class="bar"><div style="width:${VOC.cefr[lv]}%;background:${VOC.cefrColors[lv]}"></div></span><span class="pct">${VOC.cefr[lv]}%</span></div>`).join("")}
+      <p style="font-size:11px;color:var(--color-muted);margin:8px 0 0">${VOC.note}</p>
+      <div class="subhead">Gợi ý nâng cấp</div>
+      ${topTips}
+      <button type="button" class="full-btn" style="margin-top:10px;width:100%" data-act="openModal" data-modal="voc">⛶ Xem từ theo cấp độ &amp; gợi ý đầy đủ</button>`;
+  }
+  function gramCardHtml(item) {
+    const e0 = GRAM.errorTypes[0], s0 = GRAM.suggestions[0];
+    const accPct = Math.round((GRAM.accurateSentences / GRAM.totalSentences) * 100);
+    return `<div class="insight-score-line" style="color:${CRITERION_META.grammar.color}">Điểm tiêu chí: <b>${item.score.toFixed(1)}</b></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:12px;font-weight:600;color:#334155">Độ chính xác &amp; đa dạng</span><span class="badge-pill" style="background:#fef3c7;color:#92400e">${GRAM.badge}</span></div>
+      <div class="accuracy-bar-row"><div class="lbl-row"><span>Câu không lỗi</span><span><b>${GRAM.accurateSentences}/${GRAM.totalSentences} câu</b></span></div><div class="thin-bar"><div style="width:${accPct}%;background:#22c55e"></div></div></div>
+      <div class="complexity-bar-row"><div class="lbl-row"><span>Câu đơn / Câu phức</span><span>${GRAM.simplePct}% / ${GRAM.complexPct}%</span></div><div class="thin-bar"><div style="width:${GRAM.simplePct}%;background:#64748b"></div></div></div>
+      <div style="margin-top:8px;border-radius:10px;background:#f8fafc;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;font-size:12px"><span>Lỗi thường gặp</span><span><b>${e0.label}</b> · <span style="color:#be123c">${e0.count} lỗi</span></span></div>
+      <div class="suggestion-mini"><b>💡 ${s0.tip}</b></div>
+      <button type="button" class="full-btn" style="margin-top:10px;width:100%" data-act="openModal" data-modal="gram">⛶ Xem câu theo độ phức &amp; cấu trúc</button>`;
+  }
+
+  let IMP_TAGS = {};
+  function impTagged(goal, container) {
+    let i = 0;
+    return IMPROVE[goal].answer.replace(/<U:([^|]+)\|([^|]+)\|([^>]+)>/g, (mm, cat, text, why) => {
+      const idx = i++;
+      IMP_TAGS[goal + "|" + container + "|" + idx] = { cat, text, why };
+      const col = IMP_CAT[cat].c;
+      return `<button type="button" class="coach-tag" data-act="showImpTag" data-goal="${goal}" data-container="${container}" data-idx="${idx}" style="color:${col};background:${col}1a;border-color:${col}">${escapeHtml(text)}</button>`;
+    });
+  }
+  function coachCardHtml(item) {
+    const m = IMPROVE[item.goal];
+    return `<div class="coach-target">Hướng tới band ${m.target} · bấm cụm tô màu để xem vì sao</div>
+      <div class="coach-answer-box">${impTagged(item.goal, item.id)}</div>
+      <div class="coach-tags-row">${m.changes.map((ch) => `<span class="tag-pill" style="background:${IMP_CAT[ch.cat].c}1a;color:${IMP_CAT[ch.cat].c}">${IMP_CAT[ch.cat].label}</span>`).join("")}</div>
+      <div class="coach-actions-row">
+        <button type="button" data-act="openModal" data-modal="coach" data-goal="${item.goal}">⛶ Bản đầy đủ</button>
+        <button type="button" class="primary" data-act="tryAgain">🎙 Thử nói lại</button>
+      </div>`;
+  }
+
+  function renderCard(item) {
+    const el = document.createElement("div");
+    const isInsight = item.kind === "criterion";
+    el.className = `feed-card is-new ${isInsight ? "insight-card" : item.tone}`;
+    if (isInsight) el.style.border = `1px solid ${item.color}33`;
+    el.dataset.id = item.id;
+    const dotHtml = isInsight ? `<span class="dot" style="background:${item.color}"></span>` : "";
+    el.innerHTML = `
+      <div class="feed-card-head">
+        <span class="title">${dotHtml}${item.title}</span>
+        <span class="head-actions"><button class="close-x" type="button" aria-label="Đóng thẻ ${escapeHtml(item.title)}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button></span>
+      </div>
+      ${cardBodyFor(item)}
+    `;
+    el.querySelector(".close-x").addEventListener("click", () => removeItem(item.id));
+    el.querySelectorAll("[data-act='openModal']").forEach((b) => b.addEventListener("click", (e) => openModalFromCard(b.dataset.modal, b.dataset.goal, e.currentTarget)));
+    el.querySelectorAll("[data-act='openDrill']").forEach((b) => b.addEventListener("click", (e) => openDrillModal(b.dataset.word, e.currentTarget)));
+    el.querySelectorAll("[data-act='showImpTag']").forEach((b) => b.addEventListener("click", (e) => showImpTag(e, b.dataset.goal, b.dataset.container, +b.dataset.idx)));
+    el.querySelectorAll("[data-act='tryAgain']").forEach((b) => b.addEventListener("click", tryAgain));
+    if (item.kind === "note") {
+      const ta = el.querySelector("textarea");
+      ta.addEventListener("input", () => { item.noteValue = ta.value; });
+    }
+    return el;
+  }
+
+  function syncEmptyState() { feedEmpty.style.display = state.items.length ? "none" : "flex"; }
+  function scrollFeedToBottom() { requestAnimationFrame(() => feed.scrollTo({ top: feed.scrollHeight, behavior: "smooth" })); }
+
+  function pushItem(item) {
+    const existing = state.items.find((i) => i.id === item.id);
+    if (existing) return existing;
+    state.items.push(item);
+    const node = renderCard(item);
+    feed.appendChild(node);
+    syncEmptyState();
+    scrollFeedToBottom();
+    setTimeout(() => node.classList.remove("is-new"), 1400);
+    return item;
+  }
+  function removeItem(id) {
+    state.items = state.items.filter((i) => i.id !== id);
+    const node = feed.querySelector(`.feed-card[data-id="${CSS.escape(id)}"]`);
+    if (node) {
+      node.style.transition = "opacity 140ms ease, transform 140ms ease";
+      node.style.opacity = "0";
+      node.style.transform = "translateY(-4px) scale(.97)";
+      setTimeout(() => node.remove(), 140);
+    }
+    syncEmptyState();
+    refreshActionButtons();
+  }
+
+  function syncCriterionChipState(key) {
+    const active = state.items.some((i) => i.id === `criterion:${key}`);
+    document.querySelectorAll(`.score-chip[data-key="${key}"]`).forEach((chip) => {
+      chip.setAttribute("aria-pressed", String(active));
+      chip.dataset.active = String(active);
+    });
+  }
+  function toggleCriterion(key, attempt) {
+    const id = `criterion:${key}`;
+    if (state.items.some((i) => i.id === id)) {
+      removeItem(id);
+      syncCriterionChipState(key);
+      return;
+    }
+    const meta = CRITERION_META[key];
+    pushItem({ id, kind: "criterion", key, title: meta.title, color: meta.color, score: attempt.scores[key] });
+    syncCriterionChipState(key);
+    ensurePanelOpen();
+    refreshActionButtons();
+  }
+  function addOnce(kind) {
+    const id = `action:${kind}`;
+    if (state.items.some((i) => i.id === id)) { ensurePanelOpen(); return; }
+    const meta = ACTION_META[kind];
+    pushItem({ id, kind, key: kind, title: meta.title, tone: meta.tone, noteValue: "" });
+    refreshActionButtons();
+    ensurePanelOpen();
+  }
+  const ACTION_META = { sample: { title: "Câu trả lời mẫu", tone: "tone-blue" }, vocab: { title: "Từ vựng chủ đề", tone: "tone-amber" }, note: { title: "Ghi chú", tone: "tone-slate" } };
+
+  function doImprove(goal, attempt) {
+    if (!attempt.corrDone) return;
+    const id = `rewrite:${goal}`;
+    if (state.items.some((i) => i.id === id)) { ensurePanelOpen(); refreshActionButtons(); return; }
+    const loadingId = "rewrite-loading:" + goal;
+    pushItem({ id: loadingId, kind: "loading", title: "Đang tạo câu cải thiện…" });
+    ensurePanelOpen();
+    setTimeout(() => {
+      removeItem(loadingId);
+      const meta = { vocab: { title: "Câu tốt hơn · Nâng từ vựng", tone: "tone-blue" }, grammar: { title: "Câu tốt hơn · Đa dạng ngữ pháp", tone: "tone-amber" }, depth: { title: "Câu tốt hơn · Phát triển ý sâu", tone: "tone-slate" } }[goal];
+      pushItem({ id, kind: "rewrite", key: goal, goal, title: meta.title, tone: meta.tone });
+      refreshActionButtons();
+    }, 1200);
+  }
+
+  function refreshActionButtons() {
+    document.querySelectorAll(".action-btn[data-action]").forEach((btn) => {
+      const kind = btn.dataset.action;
+      btn.dataset.added = state.items.some((i) => i.id === `action:${kind}`) ? "true" : "false";
+    });
+    document.querySelectorAll(".rail-icon-btn[data-action]").forEach((btn) => {
+      const kind = btn.dataset.action;
+      btn.dataset.added = state.items.some((i) => i.id === `action:${kind}` || i.id === `criterion:${kind}`) ? "true" : "false";
+    });
+  }
+
+  // Loading card renderer override
+  const origRenderCard = renderCard;
+  function renderCardDispatch(item) {
+    if (item.kind === "loading") {
+      const el = document.createElement("div");
+      el.className = "feed-card is-new tone-slate";
+      el.dataset.id = item.id;
+      el.innerHTML = `<div class="loading-card"><svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 11-3-6.7"/></svg> ${item.title}</div>`;
+      return el;
+    }
+    return origRenderCard(item);
+  }
+  // route pushItem through dispatch by monkey-patching renderCard reference used inside pushItem
+  renderCard = renderCardDispatch; // eslint-disable-line no-func-assign
+
+  /* ═══════════════════════ Rail icons (Medium/Wide-collapsed) ═══════════════════════ */
+  const RAIL_BUTTONS = [
+    { action: "fluency", tone: "blue", label: "Trôi chảy", svg: '<path d="M3 12h4l3 8 4-16 3 8h4"/>' },
+    { action: "lexical", tone: "violet", label: "Từ vựng", svg: '<path d="M9 18h6M10 22h4M15 2a6 6 0 00-4 10.47V15h8v-2.53A6 6 0 0015 2z"/>' },
+    { action: "pronunciation", tone: "pink", label: "Phát âm", svg: '<path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/>' },
+    { action: "grammar", tone: "amber", label: "Ngữ pháp", svg: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>' },
+    { action: "sample", tone: "blue", label: "Câu mẫu", svg: '<path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 4.5A2.5 2.5 0 016.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15z"/>' },
+    { action: "vocab", tone: "amber", label: "Từ vựng chủ đề", svg: '<path d="M9 18h6M10 22h4M15 2a6 6 0 00-4 10.47V15h8v-2.53A6 6 0 0015 2z"/>' },
+    { action: "note", tone: "slate", label: "Ghi chú", svg: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>' },
+  ];
+  const CRITERION_ACTIONS = new Set(["fluency", "lexical", "pronunciation", "grammar"]);
+  RAIL_BUTTONS.forEach(({ action, tone, label, svg }) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `rail-icon-btn ${tone}`;
+    btn.title = label;
+    btn.setAttribute("aria-label", label);
+    btn.dataset.action = action;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">${svg}</svg>`;
+    btn.addEventListener("click", () => {
+      if (CRITERION_ACTIONS.has(action)) {
+        const lastResult = [...attempts].reverse().find((x) => x.type === "result");
+        if (lastResult) toggleCriterion(action, lastResult);
+      } else {
+        addOnce(action);
+      }
+      expandPanel();
+    });
+    railIcons.appendChild(btn);
+  });
+
+  /* ═══════════════════════ Panel open/collapse (rail/drawer/split) ═══════════════════════ */
+  function ensurePanelOpen() { if (state.bp === "medium") expandPanel(); }
+  function expandPanel() {
+    if (state.bp === "medium") { panel.dataset.expanded = "true"; backdrop.classList.add("visible"); }
+    if (state.bp === "wide") { panel.dataset.collapsed = "false"; state.collapsed = false; }
+  }
+  function closePanel() { panel.dataset.expanded = "false"; backdrop.classList.remove("visible"); }
+  backdrop.addEventListener("click", closePanel);
+  collapseBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (state.bp === "wide") { state.collapsed = !state.collapsed; panel.dataset.collapsed = state.collapsed ? "true" : "false"; }
+    else if (state.bp === "medium") closePanel();
+  });
+  panel.addEventListener("click", (e) => {
+    const isCollapsedWide = state.bp === "wide" && state.collapsed;
+    const isRailMedium = state.bp === "medium" && panel.dataset.expanded !== "true";
+    if ((isCollapsedWide || isRailMedium) && !e.target.closest(".rail-icon-btn")) expandPanel();
+  });
+
+  document.querySelectorAll(".action-btn[data-action]").forEach((btn) => btn.addEventListener("click", () => addOnce(btn.dataset.action)));
+
+  mobileTabs.querySelectorAll("button").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      mobileTabs.querySelectorAll("button").forEach((b) => (b.dataset.active = "false"));
+      tab.dataset.active = "true";
+      body.dataset.activeTab = tab.dataset.tab;
+    });
+  });
+
+  const ro = new ResizeObserver((entries) => {
+    const w = Math.round(entries[0].contentRect.width);
+    let bp = "wide";
+    if (w < 768) bp = "compact"; else if (w < 1200) bp = "medium";
+    if (bp !== state.bp) {
+      state.bp = bp;
+      if (bp !== "medium") closePanel();
+      if (bp !== "wide") { state.collapsed = false; panel.dataset.collapsed = "false"; }
+    }
+    viewportBadge.textContent = `${bp === "compact" ? "Compact" : bp === "medium" ? "Medium" : "Wide"} • ${w}px`;
+  });
+  ro.observe(shell);
+
+  /* ═══════════════════════ Modal system (chung: scrim + focus trap + Esc) ═══════════════════════ */
+  let openModalStack = [];
+  function trapFocus(modalEl) {
+    const focusables = modalEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (!focusables.length) return;
+    focusables[0].focus();
+    function handler(e) {
+      if (e.key !== "Tab") return;
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    modalEl._focusTrapHandler = handler;
+    modalEl.addEventListener("keydown", handler);
+  }
+  function openModal(modalEl, triggerEl) {
+    lastFocusedEl = triggerEl || document.activeElement;
+    genericScrim.classList.add("visible");
+    modalEl.classList.add("visible");
+    openModalStack.push(modalEl);
+    trapFocus(modalEl);
+  }
+  function closeTopModal() {
+    const modalEl = openModalStack.pop();
+    if (!modalEl) { genericScrim.classList.remove("visible"); return; }
+    modalEl.classList.remove("visible");
+    if (modalEl._focusTrapHandler) modalEl.removeEventListener("keydown", modalEl._focusTrapHandler);
+    if (!openModalStack.length) genericScrim.classList.remove("visible");
+    if (lastFocusedEl && lastFocusedEl.focus) lastFocusedEl.focus();
+  }
+  genericScrim.addEventListener("click", closeTopModal);
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (openModalStack.length) closeTopModal();
+    else if (fixPopover.classList.contains("visible")) fixPopover.classList.remove("visible");
+    else if (state.bp === "medium" && panel.dataset.expanded === "true") closePanel();
+  });
+
+  function closeableModalHtml(id, closeFn) {
+    return `<button type="button" class="modal-close" data-act="${closeFn}" aria-label="Đóng">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>`;
+  }
+  function wireModalClose(modalEl) {
+    modalEl.querySelectorAll("[data-act='closeModal']").forEach((b) => b.addEventListener("click", closeTopModal));
+  }
+
+  function openModalFromCard(kind) {
+    if (kind === "pron") openPronModal();
+    else if (kind === "flu") openFluModal();
+    else if (kind === "voc") openVocModal();
+    else if (kind === "gram") openGramModal();
+    else if (kind === "coach") openCoachModal(arguments[1]);
+  }
+
+  /* ── Phát âm — panel rộng ── */
+  function openPronModal() {
+    const m = document.getElementById("pronModal");
+    m.innerHTML = `${closeableModalHtml()}
+      <h2 class="modal-title"><span class="dot" style="background:${CRITERION_META.pronunciation.color}"></span> Phân tích · Phát âm <span style="font-weight:400;color:#64748b;font-size:13px">· ${PRON.score.toFixed(1)}</span></h2>
+      <div class="modal-grid two-col">
+        <div>
+          <div class="modal-section-title">Từ cần sửa nhất (nặng → nhẹ)</div>
+          <div class="mistake-grid">${PRON.weakest.map((mm) => `
+            <div class="mistake-card">
+              <div class="top-row"><b>"${mm.word}"</b><span class="score-pill" style="background:${mm.pct < 50 ? "#ffe4e6" : "#fef3c7"};color:${mm.pct < 50 ? "#be123c" : "#92400e"}">${mm.pct}%</span></div>
+              <div class="ipa-row"><span style="color:#059669">✓ Đúng: /${mm.correct}/</span></div>
+              <div class="ipa-row"><span style="color:#e11d48">✗ Bạn nói: /${mm.you}/</span></div>
+              <span class="ctx">${mm.ctx}</span>
+              <button type="button" class="drill-btn" data-act="openDrill" data-word="${mm.word}">Luyện ›</button>
+            </div>`).join("")}</div>
+          <div class="modal-legend"><span><span class="dot-sm" style="background:#22c55e"></span>Tốt ≥75%</span><span><span class="dot-sm" style="background:#f59e0b"></span>Khá 50–75%</span><span><span class="dot-sm" style="background:#f43f5e"></span>Cần cải thiện &lt;50%</span></div>
+        </div>
+        <div>
+          <div class="modal-section-title">Nhóm theo âm <span style="font-size:10px;font-weight:700;background:#ede9fe;color:#7c3aed;border-radius:6px;padding:1px 6px">sửa gốc rễ</span></div>
+          ${PRON.soundGroups.map((s) => `<div class="sound-card"><div class="head">🔊 ${s.sound}</div><p>${s.tip}</p><div class="words">${s.words.map((w) => `<button type="button" data-act="openDrill" data-word="${w}">${w}</button>`).join("")}</div></div>`).join("")}
+          <div class="modal-section-title" style="margin-top:14px">Trọng âm &amp; Ngữ điệu</div>
+          ${PRON.prosody.stress.map((s) => `<div class="prosody-row"><b>${s.word}</b><span>✓ <b style="color:#059669">${s.correct}</b> · ✗ <span style="color:#e11d48">${s.you}</span></span></div>`).join("")}
+          <p style="font-size:12px;color:var(--color-muted);margin-top:6px"><b style="color:var(--color-text)">Nhịp:</b> ${PRON.prosody.rhythm}</p>
+          <p style="font-size:12px;color:var(--color-muted)"><b style="color:var(--color-text)">Ngữ điệu:</b> ${PRON.prosody.intonation}</p>
+        </div>
+      </div>`;
+    wireModalCommon(m);
+    openModal(m);
+  }
+
+  /* ── Trôi chảy & Mạch lạc — panel rộng ── */
+  function openFluModal() {
+    const m = document.getElementById("fluModal");
+    const pct = Math.max(2, Math.min(98, ((FLU.wpm - 60) / 140) * 100));
+    m.innerHTML = `${closeableModalHtml()}
+      <h2 class="modal-title"><span class="dot" style="background:${CRITERION_META.fluency.color}"></span> Phân tích · Trôi chảy &amp; Mạch lạc <span style="font-weight:400;color:#64748b;font-size:13px">· ${FLU.score.toFixed(1)}</span></h2>
+      <div class="modal-grid two-col">
+        <div>
+          <div class="modal-section-title">Ngắt nghỉ &amp; filler</div>
+          <div class="dist-row"><span class="good">🟢 ${FLU.goodPause} ngắt tốt</span><span class="fair">🟡 ${FLU.medPause} ngắt vừa</span><span class="needs">🔴 ${FLU.longPause} ngắt dài</span></div>
+          <div class="mini-audio-row"><button type="button" class="play-round"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3l14 9-14 9V3z"/></svg></button><span class="time">0:00</span><div class="track"><div class="fill"></div><div class="knob"></div></div><span class="time">0:32</span></div>
+        </div>
+        <div>
+          <div class="speed-gauge-box">
+            <div class="top-row"><span style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">⚡ Tốc độ nói</span><span class="wpm-val">${FLU.wpm}<span style="font-size:11px;font-weight:400;color:#64748b"> từ/phút</span></span></div>
+            <div class="gauge-track"><div class="marker" style="left:${pct}%"></div></div>
+            <div class="gauge-labels"><span style="color:#e11d48">Chậm</span><span style="color:#059669">Tốt 120–150</span><span style="color:#e11d48">Nhanh</span></div>
+            <p class="gauge-note">Giám khảo thích nhịp ~120–150 từ/phút — bạn đang hơi chậm.</p>
+          </div>
+          <div class="coherence-box" style="margin-top:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:13px;font-weight:700">Mạch lạc <span style="font-weight:400;color:#64748b;font-size:11px">(coherence)</span></span><span class="badge-pill" style="background:#ccfbf1;color:#0f766e">${FLU.coherenceBadge}</span></div>
+            <p style="font-size:12px;color:var(--color-muted);margin-top:6px">${FLU.coherenceNote}</p>
+            <p style="font-size:11px;color:var(--color-muted);margin-top:6px">Liên từ đã dùng: ${FLU.linkersUsed.map((w) => `<span style="background:#eef2ff;color:#4f46e5;border-radius:4px;padding:1px 6px;font-weight:600">${w}</span>`).join(" ")} · Gợi ý thêm: ${FLU.linkerSuggest}</p>
+          </div>
+        </div>
+      </div>`;
+    wireModalCommon(m);
+    openModal(m);
+  }
+
+  /* ── Từ vựng — panel rộng ── */
+  function openVocModal() {
+    const m = document.getElementById("vocModal");
+    m.innerHTML = `${closeableModalHtml()}
+      <h2 class="modal-title"><span class="dot" style="background:${CRITERION_META.lexical.color}"></span> Phân tích · Từ vựng <span style="font-weight:400;color:#64748b;font-size:13px">· ${VOC.score.toFixed(1)}</span></h2>
+      <div class="modal-grid two-col">
+        <div>
+          <div class="modal-section-title">Phân bố cấp độ (CEFR)</div>
+          ${Object.keys(VOC.cefr).map((lv) => `<div class="cefr-full-row"><span class="lv" style="background:${VOC.cefrColors[lv]}">${lv}</span><span class="bar"><div style="width:${VOC.cefr[lv]}%;background:${VOC.cefrColors[lv]}"></div></span><span class="pct">${VOC.cefr[lv]}%</span></div>`).join("")}
+          <p style="font-size:11.5px;color:var(--color-muted);margin-top:6px">${VOC.note}</p>
+        </div>
+        <div>
+          <div class="modal-section-title">Gợi ý nâng cấp (paraphrase)</div>
+          <div style="border-radius:10px;background:#fffbeb;color:#92400e;padding:8px 12px;font-size:12px;font-weight:500;margin-bottom:8px">Dùng các từ gợi ý để nâng band Từ vựng.</div>
+          ${VOC.tips.map((t) => `<div class="voc-tip-card"><div class="word">${t.word}</div><div style="font-size:11px;color:#64748b;margin-top:2px">Thử dùng:</div><div class="alts">${t.alts.map((a) => `<span>${a}</span>`).join("")}</div></div>`).join("")}
+        </div>
+      </div>`;
+    wireModalCommon(m);
+    openModal(m);
+  }
+
+  /* ── Ngữ pháp — panel rộng ── */
+  function openGramModal() {
+    const m = document.getElementById("gramModal");
+    const accPct = Math.round((GRAM.accurateSentences / GRAM.totalSentences) * 100);
+    const structMeta = { ok: { c: "#059669", t: "Dùng đúng", i: "✓" }, fail: { c: "#d97706", t: "Chưa đúng", i: "⚠" }, todo: { c: "#64748b", t: "Nên thử", i: "💡" } };
+    m.innerHTML = `${closeableModalHtml()}
+      <h2 class="modal-title"><span class="dot" style="background:${CRITERION_META.grammar.color}"></span> Phân tích · Ngữ pháp <span style="font-weight:400;color:#64748b;font-size:13px">· ${GRAM.score.toFixed(1)}</span></h2>
+      <div class="modal-grid two-col">
+        <div>
+          <div class="modal-section-title">Câu trả lời theo câu</div>
+          ${GRAM.sentences.map((s) => {
+            const col = s.ok ? "#22c55e" : "#f59e0b";
+            const isComplex = s.type === "complex";
+            return `<div class="sentence-row"><span class="bar-tag" style="background:${col}"></span><div style="flex:1"><p class="txt">${s.text}</p><span class="type-pill" style="background:${isComplex ? "#eef2ff" : "#f1f5f9"};color:${isComplex ? "#4f46e5" : "#64748b"}">${isComplex ? "Câu phức" : "Câu đơn"}</span></div><span class="ok-note" style="color:${col}">${s.ok ? "Không lỗi" : "Có lỗi"}</span></div>`;
+          }).join("")}
+        </div>
+        <div>
+          <div class="modal-section-title">Độ chính xác &amp; đa dạng câu</div>
+          <div class="accuracy-bar-row"><div class="lbl-row"><span>Câu không lỗi</span><span><b>${GRAM.accurateSentences}/${GRAM.totalSentences}</b></span></div><div class="thin-bar"><div style="width:${accPct}%;background:#22c55e"></div></div></div>
+          <div class="complexity-bar-row"><div class="lbl-row"><span>Câu đơn / phức</span><span>${GRAM.simplePct}% / ${GRAM.complexPct}%</span></div><div class="thin-bar"><div style="width:${GRAM.simplePct}%;background:#64748b"></div></div></div>
+          <div class="modal-section-title" style="margin-top:14px">Cấu trúc nâng cao</div>
+          ${GRAM.structures.map((s) => `<div class="struct-full-row"><span>${s.name}</span><span class="status" style="color:${structMeta[s.status].c}">${structMeta[s.status].i} ${structMeta[s.status].t}</span></div>`).join("")}
+          <div class="modal-section-title" style="margin-top:14px">Lỗi theo loại</div>
+          ${GRAM.errorTypes.map((e) => `<div class="error-type-row"><span>${e.label}</span><span class="cnt">${e.count} lỗi</span></div>`).join("")}
+          <div class="modal-section-title" style="margin-top:14px">Gợi ý nâng cấp cấu trúc</div>
+          ${GRAM.suggestions.map((s) => `<div class="suggestion-full-card"><div class="tip-title">💡 ${s.tip}</div><p class="ex">"${s.ex}"</p></div>`).join("")}
+        </div>
+      </div>`;
+    wireModalCommon(m);
+    openModal(m);
+  }
+
+  /* ── Coach (Cải thiện câu) — panel rộng ── */
+  function openCoachModal(goal) {
+    const m = document.getElementById("coachModal");
+    const it = state.items.find((i) => i.kind === "rewrite" && i.key === goal);
+    const dat = IMPROVE[goal];
+    m.innerHTML = `${closeableModalHtml()}
+      <h2 class="modal-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${dat.color}" stroke-width="2" aria-hidden="true"><path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8L19 13M17.8 6.2L19 5M12.2 6.2L11 5M12.2 11.8L11 13"/><path d="M9 15l-4 4 1.5 1.5L11 16l-2-1z"/></svg> Câu trả lời tốt hơn · ${dat.label}</h2>
+      <p class="modal-sub">Hướng tới band ${dat.target} · bấm vào chỗ tô màu để xem vì sao &amp; kỹ thuật</p>
+      <div class="modal-grid two-col">
+        <div>
+          <div class="modal-section-title">Câu nâng cấp</div>
+          <div class="coach-diff-box">${impTagged(goal, "modal")}</div>
+          <div class="modal-legend">${Object.values(IMP_CAT).map((c) => `<span><span class="dot-sm" style="background:${c.c}"></span>${c.label}</span>`).join("")}</div>
+          <div class="mini-audio-row"><button type="button" class="play-round"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3l14 9-14 9V3z"/></svg></button><span style="font-size:12px;color:var(--color-muted)">Nghe mẫu câu nâng cấp</span></div>
+          <div class="modal-section-title" style="margin-top:14px">Dịch nghĩa</div>
+          <div class="translation-box">${dat.trans}</div>
+        </div>
+        <div>
+          <div class="modal-section-title">Bạn đã nâng cấp gì</div>
+          ${dat.changes.map((ch) => `<div class="change-row"><span class="dot-sm2" style="background:${IMP_CAT[ch.cat].c}"></span><span><b style="color:${IMP_CAT[ch.cat].c}">${IMP_CAT[ch.cat].label}:</b> ${ch.text}</span></div>`).join("")}
+          <div class="modal-section-title" style="margin-top:14px">Cụm đáng học</div>
+          ${dat.phrases.map((p) => `<div class="phrase-row"><span class="txt">${p}</span><button type="button" data-act="saveFlash" data-phrase="${escapeHtml(p)}">🔖 Lưu</button></div>`).join("")}
+          <button type="button" class="full-cta-btn" data-act="tryAgain">🎙 Thử nói lại theo gợi ý</button>
+        </div>
+      </div>`;
+    m.querySelectorAll("[data-act='saveFlash']").forEach((b) => b.addEventListener("click", () => {
+      b.textContent = "✓ Đã lưu";
+      b.classList.add("saved");
+      showToast(`Đã lưu "${b.dataset.phrase}" vào từ vựng`);
+    }));
+    m.querySelectorAll("[data-act='tryAgain']").forEach((b) => b.addEventListener("click", tryAgain));
+    m.querySelectorAll("[data-act='showImpTag']").forEach((b) => b.addEventListener("click", (e) => showImpTag(e, b.dataset.goal, b.dataset.container, +b.dataset.idx)));
+    wireModalCommon(m);
+    openModal(m);
+  }
+  function showImpTag(e, goal, container, idx) {
+    e.stopPropagation();
+    const d = IMP_TAGS[goal + "|" + container + "|" + idx];
+    if (!d) return;
+    const col = IMP_CAT[d.cat].c;
+    fixPopover.innerHTML = `<div class="fp-cat" style="background:${col}1a;color:${col}">${IMP_CAT[d.cat].label}</div><div class="fp-diff" style="font-weight:700;color:${col}">${escapeHtml(d.text)}</div><p>${escapeHtml(d.why)}</p>`;
+    positionPopover(e, e.currentTarget);
+  }
+  function tryAgain() {
+    closeTopModal();
+    showToast("Bấm nút 🎙 để ghi lại, áp dụng gợi ý vừa xem");
+    timeline.scrollTop = timeline.scrollHeight;
+  }
+
+  /* ── Drill phát âm theo từng từ ── */
+  function openDrillModal(word, triggerEl) {
+    const d = pronWordData(word);
+    const modelRow = d.model.map((p) => `<span style="color:#64748b">${p}</span>`).join('<span style="display:inline-block;width:4px"></span>');
+    const youRow = d.you.map(([p, st]) => `<span style="color:${st === "ok" ? "#059669" : "#d97706"}">${p}</span>`).join('<span style="display:inline-block;width:4px"></span>');
+    const m = document.getElementById("drillModal");
+    m.innerHTML = `${closeableModalHtml()}
+      <div class="drill-word-title" style="font-size:13px;color:#64748b">Luyện phát âm</div>
+      <div class="drill-play-row"><button type="button" class="play-round"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3l14 9-14 9V3z"/></svg></button><div class="word">${word}</div></div>
+      <div class="drill-ipa">/ ${d.model.join(" ")} /</div>
+      <div class="drill-meaning">${d.meaning}</div>
+      <hr style="margin:18px 0;border:none;border-top:1px solid var(--color-border)">
+      <div class="drill-compare-box">
+        <div class="lbl">Lỗi của bạn</div>
+        <div class="drill-phoneme-row"><span class="who">Mẫu</span><span class="phonemes">${modelRow}</span></div>
+        <div class="drill-phoneme-row"><span class="who">Bạn</span><span class="phonemes">${youRow}</span></div>
+        <div class="drill-guide-box">
+          <div class="g-head">🗣️ Hướng dẫn luyện âm <span class="g-target">${d.target} 👉</span></div>
+          <p>${d.guide}</p>
+          ${d.more ? `<p style="color:#64748b;font-weight:500;margin-top:6px">↓ ${d.more}</p>` : ""}
+        </div>
+      </div>
+      <p class="drill-hint">Nhấn nút <b style="color:#4338ca">Ghi âm ngay</b> ở dưới để luyện phát âm nha</p>
+      <div class="drill-cta-row"><button type="button" data-act="closeModal">Ghi âm ngay</button></div>`;
+    wireModalCommon(m);
+    openModal(m, triggerEl);
+  }
+
+  function wireModalCommon(m) {
+    m.querySelectorAll("[data-act='closeModal']").forEach((b) => b.addEventListener("click", closeTopModal));
+    m.querySelectorAll("[data-act='openDrill']").forEach((b) => b.addEventListener("click", (e) => openDrillModal(b.dataset.word, e.currentTarget)));
+  }
+
+  /* ── Paywall (hết lượt chấm) ── */
+  function openPaywallModal() {
+    const m = document.getElementById("paywallModal");
+    m.innerHTML = `${closeableModalHtml()}
+      <div class="paywall-card">
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+        <h2>Bạn đã hết lượt chấm điểm hôm nay</h2>
+        <p>Nâng cấp gói PRO để chấm điểm không giới hạn cho Practice, hoặc quay lại vào ngày mai để nhận thêm lượt miễn phí.</p>
+        <button type="button" class="cta" data-act="closeModal">Xem gói PRO</button>
+        <button type="button" class="later" data-act="closeModal">Để sau</button>
+      </div>`;
+    wireModalCommon(m);
+    openModal(m);
+  }
+
+  /* ═══════════════════════ INIT ═══════════════════════ */
+  renderHeader();
+  renderTimeline();
+  renderQuota();
+  syncEmptyState();
+})();
+</script>
+</body>
+</html>

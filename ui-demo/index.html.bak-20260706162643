@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Demo Responsive — Practice Assistant Panel</title>
+<style>
+  :root {
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-border: #e2e8f0;
+    --color-text: #0f172a;
+    --color-muted: #64748b;
+    --color-primary: #2563eb;
+    --color-primary-soft: #eff6ff;
+    --color-amber: #b45309;
+    --color-amber-soft: #fffbeb;
+    --color-emerald: #059669;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 8px rgba(15, 23, 42, 0.04);
+    --transition-fast: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-panel: 260ms cubic-bezier(0.16, 1, 0.3, 1);
+    --rail-width: 64px;
+    --panel-width-wide: 380px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  button { font-family: inherit; cursor: pointer; }
+
+  /* ─── App shell: container-query gốc, KHÔNG phụ thuộc viewport ────────── */
+  .app-shell {
+    container-type: inline-size;
+    container-name: app-shell;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .app-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 4px 8px;
+  }
+  .app-header .back { color: var(--color-muted); display: flex; }
+  .app-header h1 { font-size: 15px; font-weight: 600; margin: 0; }
+  .badge {
+    font-size: 12px; font-weight: 500; color: var(--color-primary);
+    background: var(--color-primary-soft); border: 1px solid #bfdbfe;
+    padding: 3px 10px; border-radius: 999px;
+  }
+  .header-spacer { flex: 1; }
+  .step-badge {
+    font-size: 12px; color: var(--color-muted); border: 1px solid var(--color-border);
+    padding: 4px 10px; border-radius: 999px;
+  }
+
+  .app-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: 16px;
+    position: relative;
+  }
+
+  /* ─── Cột hội thoại (trái) ──────────────────────────────────────────── */
+  .conversation-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+  .conversation-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px;
+    background: #fafbfc;
+  }
+  .question-bubble {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: 999px; padding: 12px 20px; max-width: 460px;
+  }
+  .question-bubble .icon {
+    width: 32px; height: 32px; border-radius: 999px; background: var(--color-primary);
+    display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;
+  }
+  .question-bubble p { margin: 0; font-weight: 600; font-size: 15px; }
+
+  .score-summary {
+    margin-top: 20px; border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+    padding: 18px; background: var(--color-surface);
+  }
+  .score-summary-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .score-summary-head .label { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; color: var(--color-muted); }
+  .score-summary-head .total { font-size: 28px; font-weight: 700; }
+  .score-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @container app-shell (min-width: 520px) {
+    .score-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .score-chip {
+    border-radius: var(--radius-md); padding: 10px 12px; text-align: left; border: 1px solid transparent;
+    background: #f8fafc; transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+  .score-chip:hover { transform: translateY(-1px); box-shadow: var(--shadow-card); }
+  .score-chip[data-active="true"] { outline: 2px solid var(--color-primary); outline-offset: -1px; }
+  .score-chip .k { font-size: 11px; color: var(--color-muted); display: block; margin-bottom: 2px; }
+  .score-chip .v { font-size: 17px; font-weight: 700; }
+  .score-chip.tone-blue .v { color: #1d4ed8; }
+  .score-chip.tone-violet .v { color: #7c3aed; }
+  .score-chip.tone-pink .v { color: #db2777; }
+  .score-chip.tone-amber .v { color: #b45309; }
+  .score-hint { margin: 10px 2px 0; font-size: 12px; color: var(--color-muted); text-align: center; }
+
+  .record-bar {
+    flex-shrink: 0; border-top: 1px solid var(--color-border); background: var(--color-surface);
+    padding: 16px; display: flex; align-items: center; justify-content: center; gap: 24px;
+  }
+  .mic-btn {
+    width: 60px; height: 60px; border-radius: 999px; border: none; background: var(--color-primary);
+    color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(37,99,235,.35);
+    transition: transform var(--transition-fast);
+  }
+  .mic-btn:hover { transform: scale(1.05); }
+  .nav-btn { border: 1px solid var(--color-border); background: white; border-radius: 10px; padding: 8px 14px; font-size: 13px; color: var(--color-muted); }
+
+  /* ─── Assistant panel (phải) ────────────────────────────────────────── */
+  .assistant-panel {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    width: var(--panel-width-wide);
+    transition: width var(--transition-panel);
+  }
+  .assistant-head {
+    flex-shrink: 0; padding: 16px; text-align: center; position: relative;
+    background: linear-gradient(180deg, #eff6ff, #ffffff); border-bottom: 1px solid #dbeafe;
+  }
+  .assistant-head h3 { margin: 0; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .collapse-btn {
+    position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 999px;
+    border: 1px solid var(--color-border); background: white; color: var(--color-muted);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .collapse-btn:hover { background: #f1f5f9; }
+
+  .assistant-feed {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px;
+    scroll-behavior: smooth;
+  }
+  .feed-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #cbd5e1; text-align: center; padding: 24px; }
+  .feed-empty p { color: #94a3b8; font-size: 13px; margin: 0; }
+
+  .feed-card {
+    border-radius: var(--radius-md); padding: 14px; border: 1px solid var(--color-border);
+    opacity: 0; transform: translateY(8px) scale(.98);
+    animation: card-in var(--transition-panel) forwards;
+  }
+  @keyframes card-in { to { opacity: 1; transform: translateY(0) scale(1); } }
+  .feed-card.is-new { box-shadow: 0 0 0 3px rgba(37,99,235,.35); }
+  .feed-card.tone-slate { background: #f8fafc; }
+  .feed-card.tone-blue { background: #eff6ff; }
+  .feed-card.tone-amber { background: #fffbeb; }
+  .feed-card.tone-violet { background: #f5f3ff; }
+  .feed-card.tone-pink { background: #fdf2f8; }
+  .feed-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .feed-card-head .title { font-size: 13px; font-weight: 700; }
+  .feed-card-head .score { font-size: 15px; font-weight: 700; }
+  .feed-card p.body-text { margin: 0; font-size: 13px; line-height: 1.6; color: #334155; }
+  .feed-card .close-x { border: none; background: transparent; color: #94a3b8; padding: 2px; border-radius: 999px; }
+  .feed-card .close-x:hover { background: rgba(255,255,255,.6); color: #475569; }
+  .bar-track { height: 6px; border-radius: 999px; background: #e2e8f0; overflow: hidden; margin-top: 6px; }
+  .bar-fill { height: 100%; border-radius: 999px; background: var(--color-primary); }
+  .vocab-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .vocab-item { border: 1px solid #e2e8f0; background: white; border-radius: 12px; padding: 8px 10px; }
+  .vocab-item b { font-size: 13px; }
+  .vocab-item span { display: block; font-size: 12px; color: var(--color-muted); font-style: italic; }
+  textarea.note-input {
+    width: 100%; min-height: 110px; border-radius: var(--radius-md); border: 1px solid var(--color-border);
+    padding: 12px; font: inherit; font-size: 13px; resize: vertical;
+  }
+
+  .assistant-actions { flex-shrink: 0; border-top: 1px solid var(--color-border); padding: 12px; display: grid; gap: 8px; }
+  .actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .action-btn {
+    display: flex; align-items: center; gap: 8px; border-radius: 999px; border: 1px solid var(--color-border);
+    background: white; padding: 10px 12px; font-size: 13px; font-weight: 600; text-align: left;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+  }
+  .action-btn:hover { transform: translateY(-1px); }
+  .action-btn[data-added="true"] { opacity: .55; }
+  .action-btn .ico { width: 26px; height: 26px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .action-btn.blue .ico { background: #dbeafe; color: #1d4ed8; }
+  .action-btn.amber .ico { background: #fef3c7; color: #b45309; }
+  .action-btn.violet .ico { background: #ede9fe; color: #7c3aed; }
+  .action-btn.pink .ico { background: #fce7f3; color: #db2777; }
+  .action-btn.slate .ico { background: #f1f5f9; color: #475569; }
+
+  /* ─── RAIL ICON (bậc Medium: panel thu gọn) ────────────────────────── */
+  .rail-icons { display: none; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0; }
+  .rail-icon-btn {
+    width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--color-border); background: white;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .rail-icon-btn[data-added="true"]::after {
+    content: ""; position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 999px;
+    background: var(--color-primary); border: 2px solid white;
+  }
+  .rail-icon-btn.blue { color: #1d4ed8; } .rail-icon-btn.amber { color: #b45309; }
+  .rail-icon-btn.violet { color: #7c3aed; } .rail-icon-btn.pink { color: #db2777; } .rail-icon-btn.slate { color: #475569; }
+
+  /* ─── overlay backdrop (Medium bp khi bung panel) ──────────────────── */
+  .backdrop {
+    position: fixed; inset: 0; background: rgba(15,23,42,.35); opacity: 0; pointer-events: none;
+    transition: opacity var(--transition-panel); z-index: 20;
+  }
+  .backdrop.visible { opacity: 1; pointer-events: auto; }
+
+  /* ─── mobile tabs (Compact) ─────────────────────────────────────────── */
+  .mobile-tabs {
+    display: none; flex-shrink: 0; background: #f1f5f9; border-radius: 999px; padding: 4px; gap: 4px;
+  }
+  .mobile-tabs button {
+    flex: 1; border: none; background: transparent; padding: 8px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--color-muted);
+  }
+  .mobile-tabs button[data-active="true"] { background: white; color: var(--color-text); box-shadow: var(--shadow-card); }
+
+  .viewport-badge {
+    position: fixed; bottom: 14px; right: 14px; background: #0f172a; color: white; font-size: 12px;
+    padding: 6px 12px; border-radius: 999px; opacity: .85; z-index: 40; font-variant-numeric: tabular-nums;
+  }
+
+  /* ══════════════════════════ BREAKPOINTS (container query) ══════════════════════════ */
+
+  /* Compact: < 768px theo app-shell — tab full-screen, panel/main tách theo tab active */
+  @container app-shell (max-width: 767px) {
+    .mobile-tabs { display: flex; }
+    .app-body { flex-direction: column; }
+    .app-body[data-active-tab="conversation"] .assistant-panel { display: none; }
+    .app-body[data-active-tab="assistant"] .conversation-col { display: none; }
+    .assistant-panel { width: 100%; flex: 1; min-height: 0; }
+    .rail-icons, .collapse-btn { display: none !important; }
+  }
+
+  /* Medium: 768–1199px — panel thu gọn thành rail-icon, bấm icon bung drawer đè lên */
+  @container app-shell (min-width: 768px) and (max-width: 1199px) {
+    .assistant-panel {
+      position: fixed; top: 16px; right: 16px; bottom: 16px;
+      width: var(--rail-width);
+      z-index: 30;
+    }
+    .assistant-panel[data-expanded="true"] {
+      width: min(420px, calc(100% - 32px));
+    }
+    .assistant-panel:not([data-expanded="true"]) .assistant-head h3 span.label,
+    .assistant-panel:not([data-expanded="true"]) .assistant-feed,
+    .assistant-panel:not([data-expanded="true"]) .assistant-actions,
+    .assistant-panel:not([data-expanded="true"]) .collapse-btn {
+      display: none;
+    }
+    .assistant-panel:not([data-expanded="true"]) .rail-icons { display: flex; }
+    .assistant-panel[data-expanded="true"] .rail-icons { display: none; }
+    .assistant-panel:not([data-expanded="true"]) .assistant-head { padding: 14px 0; }
+  }
+
+  /* Wide: >=1200px — split 2 cột thật, panel có thể tự thu gọn (manual collapse) */
+  @container app-shell (min-width: 1200px) {
+    .assistant-panel[data-collapsed="true"] {
+      width: var(--rail-width);
+    }
+    .assistant-panel[data-collapsed="true"] .assistant-head h3 span.label,
+    .assistant-panel[data-collapsed="true"] .assistant-feed,
+    .assistant-panel[data-collapsed="true"] .assistant-actions {
+      display: none;
+    }
+    .assistant-panel[data-collapsed="true"] .rail-icons { display: flex; }
+    .assistant-panel[data-collapsed="true"] .collapse-btn svg { transform: rotate(180deg); }
+    .rail-icons { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <header class="app-header">
+      <span class="back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </span>
+      <h1>Luyện Tập Chi Tiết</h1>
+      <span class="badge">Part 1</span>
+      <span class="header-spacer"></span>
+      <span class="step-badge">Câu 1 / 5</span>
+    </header>
+
+    <div class="app-body" id="appBody" data-active-tab="conversation">
+      <nav class="mobile-tabs" id="mobileTabs">
+        <button data-tab="conversation" data-active="true">Luyện nói</button>
+        <button data-tab="assistant" data-active="false">AI hỗ trợ</button>
+      </nav>
+
+      <main class="conversation-col">
+        <div class="conversation-scroll">
+          <div class="question-bubble">
+            <span class="icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
+            </span>
+            <p>"Do you like advertisements?"</p>
+          </div>
+
+          <div class="score-summary">
+            <div class="score-summary-head">
+              <span class="label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2H22l-6 4.6L18.4 22 12 17.4 5.6 22 8 13.8 2 9.2h7.6z"/></svg>
+                AI Chấm điểm
+              </span>
+              <span class="total">4.0</span>
+            </div>
+            <div class="score-grid">
+              <button class="score-chip tone-blue" data-criterion="fluency" data-tone="tone-blue" data-title="Trôi chảy &amp; Mạch lạc">
+                <span class="k">Trôi chảy &amp; Mạch lạc</span><span class="v">4.0</span>
+              </button>
+              <button class="score-chip tone-violet" data-criterion="lexical" data-tone="tone-violet" data-title="Từ vựng">
+                <span class="k">Từ vựng</span><span class="v">3.5</span>
+              </button>
+              <button class="score-chip tone-pink" data-criterion="pronunciation" data-tone="tone-pink" data-title="Phát âm">
+                <span class="k">Phát âm</span><span class="v">4.5</span>
+              </button>
+              <button class="score-chip tone-amber" data-criterion="grammar" data-tone="tone-amber" data-title="Ngữ pháp">
+                <span class="k">Ngữ pháp</span><span class="v">3.0</span>
+              </button>
+            </div>
+            <p class="score-hint">Bấm vào từng tiêu chí để xem phân tích chi tiết ở cột AI hỗ trợ →</p>
+          </div>
+        </div>
+
+        <div class="record-bar">
+          <button class="nav-btn">← Câu trước</button>
+          <button class="mic-btn">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/></svg>
+          </button>
+          <button class="nav-btn">Câu tiếp →</button>
+        </div>
+      </main>
+
+      <div class="backdrop" id="backdrop"></div>
+
+      <aside class="assistant-panel" id="assistantPanel" data-expanded="false" data-collapsed="false">
+        <div class="assistant-head">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.2H22l-6 4.6L18.4 22 12 17.4 5.6 22 8 13.8 2 9.2h7.6z"/></svg>
+            <span class="label">AI hỗ trợ</span>
+          </h3>
+          <button class="collapse-btn" id="collapseBtn" title="Thu gọn / mở rộng">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <div class="rail-icons" id="railIcons"></div>
+        </div>
+
+        <div class="assistant-feed" id="assistantFeed">
+          <div class="feed-empty" id="feedEmpty">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l2.4 7.2H22l-6 4.6L18.4 22 12 17.4 5.6 22 8 13.8 2 9.2h7.6z"/></svg>
+            <p>Bấm các nút bên dưới hoặc bấm vào điểm số để xem gợi ý từ AI.</p>
+          </div>
+        </div>
+
+        <div class="assistant-actions" id="assistantActions">
+          <div class="actions-row">
+            <button class="action-btn blue" data-action="sample">
+              <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 4.5A2.5 2.5 0 016.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15z"/></svg></span>
+              Câu mẫu
+            </button>
+            <button class="action-btn amber" data-action="vocab">
+              <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M15 2a6 6 0 00-4 10.47V15h8v-2.53A6 6 0 0015 2z"/></svg></span>
+              Từ vựng chủ đề
+            </button>
+          </div>
+          <button class="action-btn slate" data-action="note">
+            <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></span>
+            Ghi chú
+          </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="viewport-badge" id="viewportBadge">—</div>
+
+<script>
+(function () {
+  const shell = document.getElementById("appShell");
+  const body = document.getElementById("appBody");
+  const panel = document.getElementById("assistantPanel");
+  const feed = document.getElementById("assistantFeed");
+  const feedEmpty = document.getElementById("feedEmpty");
+  const backdrop = document.getElementById("backdrop");
+  const railIcons = document.getElementById("railIcons");
+  const collapseBtn = document.getElementById("collapseBtn");
+  const viewportBadge = document.getElementById("viewportBadge");
+  const mobileTabs = document.getElementById("mobileTabs");
+
+  // ─── State: 1 feed duy nhất, item = { id, kind, node } ────────────────
+  const state = { items: [], bp: "wide", expanded: false, collapsed: false };
+
+  const CRITERION_META = {
+    fluency: { title: "Trôi chảy & Mạch lạc", tone: "tone-blue", score: "4.0" },
+    lexical: { title: "Từ vựng", tone: "tone-violet", score: "3.5" },
+    pronunciation: { title: "Phát âm", tone: "tone-pink", score: "4.5" },
+    grammar: { title: "Ngữ pháp", tone: "tone-amber", score: "3.0" },
+  };
+
+  const ACTION_META = {
+    sample: { title: "Câu trả lời mẫu", tone: "tone-blue" },
+    vocab: { title: "Từ vựng chủ đề", tone: "tone-amber" },
+    note: { title: "Ghi chú", tone: "tone-slate" },
+  };
+
+  function cardBodyFor(kind, key) {
+    if (kind === "criterion") {
+      if (key === "grammar") {
+        return `<p class="body-text">Phát hiện 2 lỗi ngữ pháp: thì động từ chưa nhất quán ở câu 2, thiếu mạo từ ở câu 4. Xem chi tiết bản sửa ở khung bên trái.</p>`;
+      }
+      if (key === "pronunciation") {
+        return `<p class="body-text">Từ phát âm yếu nhất: <b>"whatever"</b> — độ chính xác 12%. Gợi ý luyện lại âm /w/ đầu từ.</p><div class="bar-track"><div class="bar-fill" style="width:41%"></div></div>`;
+      }
+      if (key === "lexical") {
+        return `<p class="body-text">Từ vựng còn cơ bản, lặp lại "good"/"like" 4 lần. Có thể thay bằng "appealing", "persuasive", "eye-catching".</p>`;
+      }
+      return `<p class="body-text">Bạn trả lời khá trôi chảy nhưng còn 3 khoảng ngắt dài &gt;2s. Thử luyện nói liền mạch hơn ở câu sau.</p>`;
+    }
+    if (kind === "sample") {
+      return `<p class="body-text" style="font-style:italic">"Personally, I find advertisements quite persuasive — they're designed to catch your attention within seconds, and the best ones tell a short story rather than just listing features."</p>`;
+    }
+    if (kind === "vocab") {
+      return `<div class="vocab-grid">
+        <div class="vocab-item"><b>eye-catching</b><span>bắt mắt, dễ thu hút</span></div>
+        <div class="vocab-item"><b>persuasive</b><span>có sức thuyết phục</span></div>
+        <div class="vocab-item"><b>brand awareness</b><span>độ nhận diện thương hiệu</span></div>
+      </div>`;
+    }
+    if (kind === "note") {
+      return `<textarea class="note-input" placeholder="Ghi nhanh idea, từ mới, cấu trúc muốn thử ở lượt tiếp theo..."></textarea>`;
+    }
+    return "";
+  }
+
+  function renderCard(item) {
+    const el = document.createElement("div");
+    el.className = `feed-card is-new ${item.tone}`;
+    el.dataset.id = item.id;
+    el.innerHTML = `
+      <div class="feed-card-head">
+        <span class="title">${item.title}${item.score ? ` <span class="score">${item.score}</span>` : ""}</span>
+        <button class="close-x" title="Đóng">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      ${item.bodyHtml}
+    `;
+    el.querySelector(".close-x").addEventListener("click", () => removeItem(item.id));
+    return el;
+  }
+
+  function syncEmptyState() {
+    feedEmpty.style.display = state.items.length ? "none" : "flex";
+  }
+
+  function scrollFeedToBottom() {
+    requestAnimationFrame(() => feed.scrollTo({ top: feed.scrollHeight, behavior: "smooth" }));
+  }
+
+  function pushItem({ id, kind, key, title, tone, score, bodyHtml }) {
+    const existing = state.items.find((i) => i.id === id);
+    if (existing) return existing;
+    const item = { id, kind, key, title, tone, score, bodyHtml };
+    state.items.push(item);
+    const node = renderCard(item);
+    feed.appendChild(node);
+    syncEmptyState();
+    scrollFeedToBottom();
+    setTimeout(() => node.classList.remove("is-new"), 1400);
+    return item;
+  }
+
+  function removeItem(id) {
+    state.items = state.items.filter((i) => i.id !== id);
+    const node = feed.querySelector(`.feed-card[data-id="${CSS.escape(id)}"]`);
+    if (node) {
+      node.style.transition = "opacity 140ms ease, transform 140ms ease";
+      node.style.opacity = "0";
+      node.style.transform = "translateY(-4px) scale(.97)";
+      setTimeout(() => node.remove(), 140);
+    }
+    syncEmptyState();
+    refreshActionButtons();
+  }
+
+  function toggleCriterion(key, tone, title, score) {
+    const id = `criterion:${key}`;
+    if (state.items.some((i) => i.id === id)) {
+      removeItem(id);
+      document.querySelector(`.score-chip[data-criterion="${key}"]`).dataset.active = "false";
+      return;
+    }
+    pushItem({ id, kind: "criterion", key, title, tone, score, bodyHtml: cardBodyFor("criterion", key) });
+    document.querySelector(`.score-chip[data-criterion="${key}"]`).dataset.active = "true";
+    ensurePanelOpen();
+  }
+
+  function addOnce(kind) {
+    const id = `action:${kind}`;
+    if (state.items.some((i) => i.id === id)) { ensurePanelOpen(); return; }
+    const meta = ACTION_META[kind];
+    pushItem({ id, kind, key: kind, title: meta.title, tone: meta.tone, score: null, bodyHtml: cardBodyFor(kind) });
+    refreshActionButtons();
+    ensurePanelOpen();
+  }
+
+  function refreshActionButtons() {
+    document.querySelectorAll(".action-btn[data-action]").forEach((btn) => {
+      const kind = btn.dataset.action;
+      const added = state.items.some((i) => i.id === `action:${kind}`);
+      btn.dataset.added = added ? "true" : "false";
+    });
+    document.querySelectorAll(".rail-icon-btn[data-action]").forEach((btn) => {
+      const kind = btn.dataset.action;
+      const added = state.items.some((i) => i.id === `action:${kind}` || i.id === `criterion:${kind}`);
+      btn.dataset.added = added ? "true" : "false";
+    });
+  }
+
+  // ─── Rail icons (bậc Medium/Wide-collapsed) — cùng action với nút full ─
+  const RAIL_BUTTONS = [
+    { action: "criterion:grammar", tone: "amber", label: "Ngữ pháp", svg: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>' },
+    { action: "criterion:pronunciation", tone: "pink", label: "Phát âm", svg: '<path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/>' },
+    { action: "sample", tone: "blue", label: "Câu mẫu", svg: '<path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 4.5A2.5 2.5 0 016.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15z"/>' },
+    { action: "vocab", tone: "amber", label: "Từ vựng", svg: '<path d="M9 18h6M10 22h4M15 2a6 6 0 00-4 10.47V15h8v-2.53A6 6 0 0015 2z"/>' },
+    { action: "note", tone: "slate", label: "Ghi chú", svg: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>' },
+  ];
+
+  RAIL_BUTTONS.forEach(({ action, tone, label, svg }) => {
+    const btn = document.createElement("button");
+    btn.className = `rail-icon-btn ${tone}`;
+    btn.title = label;
+    if (action.startsWith("criterion:")) {
+      btn.dataset.action = action.split(":")[1];
+    } else {
+      btn.dataset.action = action;
+    }
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${svg}</svg>`;
+    btn.addEventListener("click", () => {
+      if (action.startsWith("criterion:")) {
+        const key = action.split(":")[1];
+        const meta = CRITERION_META[key];
+        toggleCriterion(key, meta.tone, meta.title, meta.score);
+      } else {
+        addOnce(action);
+      }
+      expandPanel();
+    });
+    railIcons.appendChild(btn);
+  });
+
+  // ─── Panel open/collapse behavior theo breakpoint ─────────────────────
+  function ensurePanelOpen() {
+    if (state.bp === "medium") expandPanel();
+  }
+  function expandPanel() {
+    if (state.bp === "medium") {
+      panel.dataset.expanded = "true";
+      backdrop.classList.add("visible");
+    }
+    if (state.bp === "wide") {
+      panel.dataset.collapsed = "false";
+      state.collapsed = false;
+    }
+  }
+  function closePanel() {
+    panel.dataset.expanded = "false";
+    backdrop.classList.remove("visible");
+  }
+
+  backdrop.addEventListener("click", closePanel);
+
+  collapseBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (state.bp === "wide") {
+      state.collapsed = !state.collapsed;
+      panel.dataset.collapsed = state.collapsed ? "true" : "false";
+    } else if (state.bp === "medium") {
+      closePanel();
+    }
+  });
+
+  // Click vào rail khi đang thu gọn (Wide collapsed / Medium rail) → bung ra
+  panel.addEventListener("click", (e) => {
+    const isCollapsedWide = state.bp === "wide" && state.collapsed;
+    const isRailMedium = state.bp === "medium" && panel.dataset.expanded !== "true";
+    if ((isCollapsedWide || isRailMedium) && !e.target.closest(".rail-icon-btn")) {
+      expandPanel();
+    }
+  });
+
+  // ─── Score chip click (cột trái) → toggle criterion card bên phải ─────
+  document.querySelectorAll(".score-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const key = chip.dataset.criterion;
+      const meta = CRITERION_META[key];
+      toggleCriterion(key, meta.tone, meta.title, meta.score);
+      refreshActionButtons();
+    });
+  });
+
+  // ─── Action buttons (dưới panel) ───────────────────────────────────────
+  document.querySelectorAll(".action-btn[data-action]").forEach((btn) => {
+    btn.addEventListener("click", () => addOnce(btn.dataset.action));
+  });
+
+  // ─── Mobile tabs (Compact) ─────────────────────────────────────────────
+  mobileTabs.querySelectorAll("button").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      mobileTabs.querySelectorAll("button").forEach((b) => (b.dataset.active = "false"));
+      tab.dataset.active = "true";
+      body.dataset.activeTab = tab.dataset.tab;
+    });
+  });
+
+  // ─── Theo dõi bề rộng container (KHÔNG phải window) để set bp badge ────
+  const ro = new ResizeObserver((entries) => {
+    const w = Math.round(entries[0].contentRect.width);
+    let bp = "wide";
+    if (w < 768) bp = "compact";
+    else if (w < 1200) bp = "medium";
+    if (bp !== state.bp) {
+      state.bp = bp;
+      if (bp !== "medium") closePanel();
+      if (bp !== "wide") { state.collapsed = false; panel.dataset.collapsed = "false"; }
+    }
+    viewportBadge.textContent = `${bp === "compact" ? "Compact" : bp === "medium" ? "Medium" : "Wide"} • ${w}px`;
+  });
+  ro.observe(shell);
+
+  syncEmptyState();
+})();
+</script>
+</body>
+</html>

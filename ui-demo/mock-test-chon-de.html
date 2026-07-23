@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Demo — Chọn đề thi thử (Mock Test V2)</title>
+<style>
+  :root {
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-border: #e2e8f0;
+    --color-text: #0f172a;
+    --color-muted: #64748b;
+    --color-muted-on-soft: #47556e;
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
+    --color-primary-soft: #eff6ff;
+    --color-amber: #92400e;
+    --color-amber-soft: #fef3c7;
+    --color-amber-border: #fde68a;
+    --color-emerald: #059669;
+    --color-emerald-soft: #ecfdf5;
+    --color-emerald-border: #10b981;
+    --color-red: #dc2626;
+    --color-teal: #0f766e;
+    --color-slate-100: #f1f5f9;
+    --color-slate-200: #e2e8f0;
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-sm: 8px;
+    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 8px rgba(15, 23, 42, 0.04);
+    --shadow-lift: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px 80px; }
+  .icon { width: 1em; height: 1em; display: inline-block; vertical-align: -0.125em; flex-shrink: 0; }
+  :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+  /* ── Demo control bar ───────────────────────────────────────────── */
+  .demo-bar {
+    background: #111827; color: #fff; padding: 10px 24px; font-size: 12px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap; position: sticky; top: 0; z-index: 50;
+  }
+  .demo-bar strong { color: #93c5fd; }
+  .demo-bar select, .demo-bar label { font-size: 12px; }
+  .demo-bar select { background: #1f2937; color: #fff; border: 1px solid #374151; border-radius: 6px; padding: 4px 8px; }
+  .demo-bar label { display: flex; align-items: center; gap: 6px; }
+
+  /* ── Header ─────────────────────────────────────────────────────── */
+  header.topnav {
+    background: #fff; border-bottom: 1px solid var(--color-border);
+    padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .topnav-inner { max-width: 1200px; margin: 0 auto; width: 100%; display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-weight: 800; font-size: 18px; }
+  nav.mainnav { display: flex; gap: 28px; font-size: 14px; color: var(--color-muted); }
+  nav.mainnav a.active { color: var(--color-primary); font-weight: 600; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #cbd5e1; }
+
+  .breadcrumb { font-size: 13px; color: var(--color-muted); margin: 20px 0 8px; }
+  h1.page-title { font-size: 26px; font-weight: 700; margin: 0 0 20px; }
+
+  /* ── Premium banner (redesigned, sits ABOVE status card) ──────────── */
+  .premium-banner {
+    background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+    border: 1px solid var(--color-amber-border);
+    border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    box-shadow: var(--shadow-card);
+  }
+  .premium-banner .left { display: flex; align-items: center; gap: 14px; }
+  .premium-banner .icon-badge {
+    width: 44px; height: 44px; border-radius: 12px; background: #fff;
+    display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-card);
+    color: #d97706; font-size: 22px; flex-shrink: 0;
+  }
+  .premium-banner .copy { display: flex; flex-direction: column; gap: 2px; }
+  .premium-banner .copy .title { font-size: 14px; font-weight: 700; color: #7c2d12; }
+  .premium-banner .copy .sub { font-size: 12px; color: #9a5b13; }
+  .btn-upgrade-banner {
+    background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-weight: 700; font-size: 13px;
+    padding: 10px 20px; border-radius: 999px; white-space: nowrap; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-upgrade-banner:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(217, 119, 6, 0.4); }
+
+  /* ── Hero state card — priority action, full-width, hook-style ─────── */
+  .status-card {
+    position: relative; overflow: hidden; isolation: isolate;
+    border-radius: 28px; padding: 32px 40px; margin-bottom: 32px; width: 100%;
+    background: linear-gradient(115deg, #eff6ff 0%, #dbeafe 45%, #ffffff 100%);
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 12px 32px -8px rgba(37,99,235,0.18);
+    display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+  }
+  .status-card.emerald { background: linear-gradient(115deg, #ecfdf5 0%, #d1fae5 45%, #ffffff 100%); box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 12px 32px -8px rgba(16,185,129,0.2); }
+  .hero-decoration { position: absolute; top: -40px; right: 60px; width: 240px; height: 240px; color: var(--color-primary); opacity: 0.1; z-index: -1; pointer-events: none; }
+  .status-card.emerald .hero-decoration { color: var(--color-emerald); }
+  .hero-left { display: flex; align-items: center; gap: 20px; min-width: 0; }
+  .hero-icon-badge {
+    width: 52px; height: 52px; border-radius: 16px; background: #fff;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(15,23,42,0.08);
+    color: var(--color-primary); flex-shrink: 0;
+  }
+  .status-card.emerald .hero-icon-badge { color: var(--color-emerald); }
+  .hero-icon-badge svg { width: 26px; height: 26px; }
+  .hero-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .status-label { font-size: 13px; font-weight: 700; color: var(--color-primary); }
+  .status-card.emerald .status-label { color: var(--color-emerald); }
+  .status-heading { font-size: 22px; font-weight: 700; margin: 0; line-height: 1.3; }
+  .status-sub { font-size: 14px; color: var(--color-muted-on-soft); margin: 0; }
+  .cta-btn {
+    background: var(--color-primary); color: #fff; font-weight: 700; font-size: 15px;
+    padding: 15px 26px; border-radius: 999px; transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px; white-space: nowrap; flex-shrink: 0;
+    box-shadow: 0 6px 16px rgba(37,99,235,0.3);
+  }
+  .cta-btn:hover { background: var(--color-primary-hover); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(37,99,235,0.4); }
+  .status-card.emerald .cta-btn { background: var(--color-emerald); box-shadow: 0 6px 16px rgba(5,150,105,0.3); }
+  .status-card.emerald .cta-btn:hover { background: #047857; box-shadow: 0 8px 20px rgba(5,150,105,0.4); }
+  @media (max-width: 640px) {
+    .status-card { padding: 24px; flex-direction: column; align-items: stretch; }
+    .hero-left { flex-direction: column; align-items: flex-start; }
+    .cta-btn { width: 100%; }
+  }
+
+  section.block { margin-bottom: 28px; }
+  .block-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  .block-head h2 { font-size: 16px; font-weight: 700; margin: 0; }
+  .block-head .hint { font-size: 12px; color: var(--color-muted); }
+
+  .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 900px) { .card-grid { grid-template-columns: 1fr; } }
+
+  /* ── Exam card (modernized — rounder, flatter, divider-based) ──────── */
+  .exam-card {
+    background: var(--color-surface); border: 1px solid rgba(15,23,42,0.05); border-radius: 24px;
+    padding: 22px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-card);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .exam-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+
+  .tag-row { display: flex; gap: 6px; min-height: 24px; }
+  .tag {
+    font-size: 11px; font-weight: 700; padding: 5px 10px 5px 8px; border-radius: 8px; color: #fff;
+    display: inline-flex; align-items: center; gap: 4px; letter-spacing: 0.01em;
+  }
+  .tag-hot { background: var(--color-red); }
+  .tag-new { background: var(--color-teal); }
+
+  .meta-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .type-icon {
+    width: 26px; height: 26px; border-radius: 8px; background: var(--color-slate-100);
+    border: 1px solid var(--color-slate-200);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--color-text);
+    flex-shrink: 0;
+  }
+  .tag-forecast {
+    font-size: 11px; font-weight: 600; background: var(--color-slate-100); color: #475569;
+    padding: 5px 10px 5px 7px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;
+    border: 1px solid var(--color-slate-200);
+  }
+  .meta-text { font-size: 12px; color: var(--color-muted); }
+  .exam-title {
+    font-size: 18px; font-weight: 700; margin: 2px 0 0; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    min-height: calc(18px * 1.3 * 2);
+  }
+  .exam-status { font-size: 13px; color: var(--color-muted); margin: -4px 0 0; }
+  .exam-status .score { font-size: 15px; font-weight: 700; color: var(--color-text); }
+  .exam-status .delta-pos { color: var(--color-emerald); font-weight: 700; }
+  .exam-status .delta-neg { color: var(--color-red); font-weight: 700; }
+  .card-divider { height: 1px; background: var(--color-border); margin: 4px 0 0; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; gap: 8px; padding-top: 14px; }
+  .tag-premium {
+    font-size: 11px; font-weight: 700; background: var(--color-amber-soft); color: var(--color-amber);
+    padding: 5px 10px 5px 7px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-start {
+    background: var(--color-primary); color: #fff; font-size: 13px; font-weight: 600;
+    padding: 9px 18px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-start:hover { background: var(--color-primary-hover); }
+
+  /* ── Skeleton / error / empty states ───────────────────────────────── */
+  .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #edf2f7 37%, #e2e8f0 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: var(--radius-sm); }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+  @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+  .skel-card { height: 210px; border-radius: var(--radius-lg); }
+  .state-block { text-align: center; padding: 60px 20px; background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
+  .state-block .icon-xl { width: 48px; height: 48px; color: var(--color-muted); margin: 0 auto 16px; }
+  .state-block h3 { font-size: 16px; margin: 0 0 6px; }
+  .state-block p { font-size: 14px; color: var(--color-muted); margin: 0 0 16px; }
+  .btn-retry { border: 1px solid var(--color-primary); color: var(--color-primary); font-weight: 600; font-size: 13px; padding: 8px 18px; border-radius: 8px; background: #fff; }
+
+  /* ── Tabs + Filters ──────────────────────────────────────────────── */
+  .tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--color-border); margin-bottom: 16px; overflow-x: auto; }
+  .tab-item {
+    font-size: 14px; color: var(--color-muted); padding: 12px 14px; border-bottom: 2px solid transparent;
+    font-family: inherit; white-space: nowrap;
+  }
+  .tab-item[aria-selected="true"] { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: 600; }
+  .filter-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .pill-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    font-size: 13px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--color-border);
+    background: #fff; color: var(--color-text); display: inline-flex; align-items: center; gap: 6px; font-family: inherit;
+    min-height: 36px;
+  }
+  .pill[aria-pressed="true"] { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+  select.quarter-select { border: 1px solid var(--color-border); border-radius: 8px; padding: 8px 12px; font-size: 13px; background: #fff; }
+
+  /* ── Modal (generic) ───────────────────────────────────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(15,23,42,0.55); display: none;
+    align-items: center; justify-content: center; z-index: 100; padding: 20px; overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-close {
+    position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--color-border); background: #fff; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── Pricing modal ──────────────────────────────────────────────────── */
+  .pricing-modal { background: #fff; border-radius: 24px; padding: 40px; max-width: 1080px; width: 100%; position: relative; margin: auto; }
+  .pricing-head { text-align: center; margin-bottom: 32px; }
+  .pricing-head h2 { font-size: 24px; font-weight: 700; margin: 0 0 8px; }
+  .pricing-head p { font-size: 14px; color: var(--color-muted); margin: 0; }
+  .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  @media (max-width: 900px) { .pricing-grid { grid-template-columns: 1fr; } .pricing-modal { padding: 24px; } }
+  .price-card {
+    border: 1px solid var(--color-border); border-radius: 18px; padding: 24px; display: flex; flex-direction: column;
+    background: #fff; position: relative;
+  }
+  .price-card.featured { border: 2px solid var(--color-primary); box-shadow: 0 12px 32px rgba(37,99,235,0.15); transform: translateY(-4px); }
+  .price-card.dark { background: #0f172a; color: #fff; border-color: #0f172a; }
+  .price-badge {
+    position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+    background: var(--color-primary); color: #fff; font-size: 11px; font-weight: 700;
+    padding: 5px 14px; border-radius: 999px; white-space: nowrap;
+  }
+  .price-plan-name { font-size: 15px; font-weight: 700; margin: 0 0 6px; }
+  .price-plan-desc { font-size: 12px; color: var(--color-muted); margin: 0 0 16px; line-height: 1.5; min-height: 54px; }
+  .price-card.dark .price-plan-desc { color: #cbd5e1; }
+  .price-amount { font-size: 26px; font-weight: 800; margin: 0 0 16px; }
+  .price-amount .unit { font-size: 13px; font-weight: 500; color: var(--color-muted); }
+  .price-card.dark .price-amount .unit { color: #94a3b8; }
+  .price-features { list-style: none; margin: 0 0 20px; padding: 16px 0 0; border-top: 1px solid var(--color-border); flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .price-card.dark .price-features { border-top-color: #334155; }
+  .price-features li { font-size: 13px; display: flex; align-items: flex-start; gap: 8px; }
+  .price-features .check-icon { width: 16px; height: 16px; color: var(--color-emerald); flex-shrink: 0; margin-top: 1px; }
+  .price-card.dark .price-features .check-icon { color: #34d399; }
+  .price-cta {
+    width: 100%; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 14px; text-align: center;
+    background: var(--color-slate-100); color: var(--color-text); border: 1px solid var(--color-border);
+  }
+  .price-card.featured .price-cta { background: var(--color-primary); color: #fff; border: none; }
+  .price-card.featured .price-cta:hover { background: var(--color-primary-hover); }
+  .price-card.dark .price-cta { background: #fff; color: #0f172a; border: none; }
+  .price-cta:disabled { opacity: 0.6; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<!-- Inline SVG symbol sprite (defs only, not rendered) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-crown" viewBox="0 0 24 24"><path fill="currentColor" d="M5 18h14l1.5-9-5 3.5L12 6l-3.5 6.5-5-3.5L5 18Zm0 2h14v2H5v-2Z"/></symbol>
+    <symbol id="ic-flame" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2c1 3-2 4-2 7a2 2 0 1 0 4 0c2 1 3 3 3 5a5 5 0 1 1-10 0c0-4 3-6 5-12Z"/></symbol>
+    <symbol id="ic-sparkle" viewBox="0 0 24 24"><path fill="currentColor" d="m12 2 1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2Zm7 12 .9 2.6L22.5 17l-2.6.9L19 20.5l-.9-2.6L15.5 17l2.6-.9L19 14ZM5 14l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2Z"/></symbol>
+    <symbol id="ic-tag" viewBox="0 0 24 24"><path fill="currentColor" d="M2 12.5 11.5 3H20a1 1 0 0 1 1 1v8.5l-9.5 9.5a1 1 0 0 1-1.4 0L2 13.9a1 1 0 0 1 0-1.4Zm14-5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/></symbol>
+    <symbol id="ic-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></symbol>
+    <symbol id="ic-alert" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></symbol>
+    <symbol id="ic-search-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm10 2-4.35-4.35M9 9l4 4m0-4-4 4"/></symbol>
+    <symbol id="ic-medal" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m8.5 12.5-3 8 3.5-1.5 2 3 2.5-6.5M15.5 12.5l3 8-3.5-1.5-2 3-2.5-6.5"/>
+      <circle cx="12" cy="9" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <path fill="currentColor" d="m12 5.8 1 2.1 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3Z"/>
+    </symbol>
+    <symbol id="ic-chevron-r" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="ic-decoration" viewBox="0 0 200 200">
+      <circle cx="140" cy="60" r="70" fill="none" stroke="currentColor" stroke-width="3"/>
+      <circle cx="140" cy="60" r="46" fill="currentColor"/>
+      <path d="M108 96 76 168l30-13 17 26 22-58" fill="currentColor"/>
+      <path d="M172 96l32 72-30-13-17 26-22-58" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="demo-bar">
+  <span><strong>DEMO</strong> — Chọn đề thi thử</span>
+  <label>State:
+    <select id="stateSelect">
+      <option value="sang-luyen-tiep">Sẵn sàng luyện tiếp</option>
+      <option value="dang-lam-do">Đang làm dở</option>
+      <option value="kiem-tra-trinh-do">Kiểm tra trình độ</option>
+    </select>
+  </label>
+  <label>Data:
+    <select id="dataStateSelect">
+      <option value="loaded">Đã tải xong</option>
+      <option value="loading">Đang tải (skeleton)</option>
+      <option value="error">Lỗi tải catalog</option>
+      <option value="empty">Không có kết quả (đã lọc)</option>
+    </select>
+  </label>
+</div>
+
+<header class="topnav"><div class="topnav-inner">
+  <div class="logo">9Speak</div>
+  <nav class="mainnav">
+    <a href="#">Lộ trình</a>
+    <a href="#" class="active">Thi thử</a>
+    <a href="#">Thư viện</a>
+    <a href="#">Cộng đồng</a>
+  </nav>
+  <div class="avatar"></div>
+</div></header>
+
+<div class="wrap">
+  <div class="breadcrumb">Home &gt; Thi thử</div>
+  <h1 class="page-title">Chọn đề thi thử</h1>
+
+  <!-- ============ LOADING STATE ============ -->
+  <div id="view-loading" style="display:none">
+    <div class="skeleton" style="height:110px;margin-bottom:16px"></div>
+    <div class="skeleton" style="height:56px;margin-bottom:32px"></div>
+    <div class="skeleton" style="height:20px;width:180px;margin-bottom:14px"></div>
+    <div class="card-grid" style="margin-bottom:28px">
+      <div class="skeleton skel-card"></div><div class="skeleton skel-card"></div><div class="skeleton skel-card"></div>
+    </div>
+  </div>
+
+  <!-- ============ ERROR STATE ============ -->
+  <div id="view-error" style="display:none">
+    <div class="state-block">
+      <svg class="icon-xl" aria-hidden="true"><use href="#ic-alert"/></svg>
+      <h3>Không tải được danh sách đề thi</h3>
+      <p>Kiểm tra kết nối mạng hoặc thử lại sau</p>
+      <button class="btn-retry">Thử lại</button>
+    </div>
+  </div>
+
+  <!-- ============ LOADED STATE (happy path) ============ -->
+  <div id="view-loaded">
+
+    <div class="premium-banner">
+      <div class="left">
+        <span class="icon-badge"><svg class="icon" style="width:22px;height:22px" aria-hidden="true"><use href="#ic-crown"/></svg></span>
+        <div class="copy">
+          <span class="title">Mở khoá toàn bộ 200+ đề &amp; lượt chấm AI không giới hạn</span>
+          <span class="sub">Nâng cấp Premium để luyện thi không giới hạn</span>
+        </div>
+      </div>
+      <button class="btn-upgrade-banner" onclick="openPaywall()">Nâng cấp</button>
+    </div>
+
+    <!-- STATE: Sẵn sàng luyện tiếp -->
+    <div class="status-card" id="state-sang-luyen-tiep">
+      <svg class="hero-decoration" aria-hidden="true"><use href="#ic-decoration"/></svg>
+      <div class="hero-left">
+        <div class="hero-icon-badge"><svg aria-hidden="true"><use href="#ic-medal"/></svg></div>
+        <div class="hero-text">
+          <span class="status-label">Sẵn sàng luyện tiếp</span>
+          <h2 class="status-heading">Trình độ hiện tại: Band 5.5</h2>
+          <p class="status-sub">Mục tiêu Band 7.0 · Hệ thống đề phù hợp đã sẵn sàng — bắt đầu luyện ngay</p>
+        </div>
+      </div>
+      <button class="cta-btn">Bắt đầu thi <svg width="18" height="18" aria-hidden="true"><use href="#ic-chevron-r"/></svg></button>
+    </div>
+
+    <!-- STATE: Đang làm dở -->
+    <div class="status-card emerald" id="state-dang-lam-do" style="display:none">
+      <svg class="hero-decoration" aria-hidden="true"><use href="#ic-decoration"/></svg>
+      <div class="hero-left">
+        <div class="hero-icon-badge"><svg aria-hidden="true"><use href="#ic-medal"/></svg></div>
+        <div class="hero-text">
+          <span class="status-label">Đang làm dở</span>
+          <h2 class="status-heading">Part 1 — Mô tả ảnh và sự vật xung quanh</h2>
+          <p class="status-sub">Tiếp tục hoàn thành bài thi dở dang để nhận điểm dự đoán</p>
+        </div>
+      </div>
+      <button class="cta-btn">Tiếp tục thi <svg width="18" height="18" aria-hidden="true"><use href="#ic-chevron-r"/></svg></button>
+    </div>
+
+    <!-- STATE: Kiểm tra trình độ -->
+    <div class="status-card" id="state-kiem-tra-trinh-do" style="display:none">
+      <svg class="hero-decoration" aria-hidden="true"><use href="#ic-decoration"/></svg>
+      <div class="hero-left">
+        <div class="hero-icon-badge"><svg aria-hidden="true"><use href="#ic-medal"/></svg></div>
+        <div class="hero-text">
+          <span class="status-label">Bắt đầu từ đây</span>
+          <h2 class="status-heading">Kiểm tra trình độ để chọn đề phù hợp</h2>
+          <p class="status-sub">~15 phút · AI chấm và gợi ý lộ trình ngay</p>
+        </div>
+      </div>
+      <button class="cta-btn">Kiểm tra ngay <svg width="18" height="18" aria-hidden="true"><use href="#ic-chevron-r"/></svg></button>
+    </div>
+
+    <section class="block">
+      <div class="block-head"><h2>Đề gợi ý cho bạn</h2><span class="hint">Khám phá đề bạn chưa làm</span></div>
+      <div class="card-grid">
+        <div class="exam-card">
+          <div class="tag-row">
+            <span class="tag tag-hot"><svg class="icon" aria-hidden="true"><use href="#ic-flame"/></svg>HOT</span>
+            <span class="tag tag-new"><svg class="icon" aria-hidden="true"><use href="#ic-sparkle"/></svg>NEW</span>
+          </div>
+          <div class="meta-row">
+            <span class="type-icon">F</span>
+            <span class="tag-forecast"><svg class="icon" aria-hidden="true"><use href="#ic-tag"/></svg>Forecast</span>
+            <span class="meta-text">03 · Full mock test</span>
+          </div>
+          <h3 class="exam-title">Media and Communication</h3>
+          <p class="exam-status">Chưa làm</p>
+          <div class="card-divider"></div>
+          <div class="card-footer"><span></span><button class="btn-start" onclick="openPaywall()">Bắt đầu ›</button></div>
+        </div>
+        <div class="exam-card">
+          <div class="tag-row"></div>
+          <div class="meta-row">
+            <span class="type-icon">2</span>
+            <span class="tag-forecast"><svg class="icon" aria-hidden="true"><use href="#ic-tag"/></svg>Forecast</span>
+            <span class="meta-text">02 · Part 2</span>
+          </div>
+          <h3 class="exam-title">Travel and Tourism</h3>
+          <p class="exam-status">Đã làm · <span class="score">7.0</span> <span class="delta-pos">(+0.5)</span></p>
+          <div class="card-divider"></div>
+          <div class="card-footer"><span></span><button class="btn-start">Bắt đầu ›</button></div>
+        </div>
+        <div class="exam-card">
+          <div class="tag-row"><span class="tag tag-hot"><svg class="icon" aria-hidden="true"><use href="#ic-flame"/></svg>HOT</span></div>
+          <div class="meta-row">
+            <span class="type-icon">F</span>
+            <span class="tag-forecast"><svg class="icon" aria-hidden="true"><use href="#ic-tag"/></svg>Forecast</span>
+            <span class="meta-text">04 · Full mock test</span>
+          </div>
+          <h3 class="exam-title">Society</h3>
+          <p class="exam-status">Chưa làm</p>
+          <div class="card-divider"></div>
+          <div class="card-footer">
+            <span class="tag-premium"><svg class="icon" aria-hidden="true"><use href="#ic-crown"/></svg>PREMIUM</span>
+            <button class="btn-start" onclick="openPaywall()">Bắt đầu ›</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tab-bar" role="tablist" aria-label="Phạm vi đề thi">
+      <button class="tab-item" role="tab" aria-selected="true" id="tab-full" data-tab="full">Thi đầy đủ</button>
+      <button class="tab-item" role="tab" aria-selected="false" tabindex="-1" id="tab-part1" data-tab="part1">Part 1</button>
+      <button class="tab-item" role="tab" aria-selected="false" tabindex="-1" id="tab-part2" data-tab="part2">Part 2</button>
+      <button class="tab-item" role="tab" aria-selected="false" tabindex="-1" id="tab-part3" data-tab="part3">Part 3</button>
+      <!-- Đề thi custom: tạm ẩn trong bản này -->
+    </div>
+
+    <div class="filter-bar">
+      <div class="pill-group" id="pillGroup" role="group" aria-label="Lọc đề">
+        <button class="pill" data-pill="all" aria-pressed="true">Tất cả</button>
+        <button class="pill" data-pill="forecast" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#ic-flame"/></svg>Forecast</button>
+        <button class="pill" data-pill="done" aria-pressed="false">Đã làm</button>
+        <button class="pill" data-pill="todo" aria-pressed="false">Chưa làm</button>
+      </div>
+      <label>
+        <span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Chọn kỳ</span>
+        <select class="quarter-select"><option>Q2/2026</option><option>Q1/2026</option></select>
+      </label>
+    </div>
+
+    <section class="block">
+      <div class="block-head"><h2>Tất cả đề</h2><span class="hint" id="allExamsCount">12 đề có sẵn</span></div>
+
+      <div id="allExamsGrid" class="card-grid">
+        <div class="exam-card">
+          <div class="tag-row"><span class="tag tag-hot"><svg class="icon" aria-hidden="true"><use href="#ic-flame"/></svg>HOT</span></div>
+          <div class="meta-row"><span class="type-icon">1</span><span class="tag-forecast"><svg class="icon" aria-hidden="true"><use href="#ic-tag"/></svg>Forecast</span><span class="meta-text">Forecast 01</span></div>
+          <h3 class="exam-title">AI and Entertainment</h3>
+          <p class="exam-status">Chưa làm</p>
+          <div class="card-divider"></div>
+          <div class="card-footer"><span></span><button class="btn-start">Bắt đầu ›</button></div>
+        </div>
+        <div class="exam-card">
+          <div class="tag-row"><span class="tag tag-new"><svg class="icon" aria-hidden="true"><use href="#ic-sparkle"/></svg>NEW</span></div>
+          <div class="meta-row"><span class="type-icon">3</span><span class="tag-forecast"><svg class="icon" aria-hidden="true"><use href="#ic-tag"/></svg>Forecast</span><span class="meta-text">04 · Part 3</span></div>
+          <h3 class="exam-title">Science and Environment</h3>
+          <p class="exam-status">Đã làm · <span class="score">6.5</span> <span class="delta-pos">(+0.5)</span></p>
+          <div class="card-divider"></div>
+          <div class="card-footer"><span></span><button class="btn-start">Bắt đầu ›</button></div>
+        </div>
+        <div class="exam-card">
+          <div class="tag-row"></div>
+          <div class="meta-row"><span class="type-icon">F</span><span class="tag-forecast"><svg class="icon" aria-hidden="true"><use href="#ic-tag"/></svg>Forecast</span><span class="meta-text">Forecast 02</span></div>
+          <h3 class="exam-title">History and Culture</h3>
+          <p class="exam-status">Chưa làm</p>
+          <div class="card-divider"></div>
+          <div class="card-footer">
+            <span class="tag-premium"><svg class="icon" aria-hidden="true"><use href="#ic-crown"/></svg>PREMIUM</span>
+            <button class="btn-start" onclick="openPaywall()">Bắt đầu ›</button>
+          </div>
+        </div>
+        <div class="exam-card">
+          <div class="tag-row"></div>
+          <div class="meta-row"><span class="type-icon">F</span><span class="tag-forecast"><svg class="icon" aria-hidden="true"><use href="#ic-tag"/></svg>Forecast</span><span class="meta-text">Forecast 03</span></div>
+          <h3 class="exam-title">Work and Career</h3>
+          <p class="exam-status">Đã làm · <span class="score">5.0</span> <span class="delta-neg">(-0.5)</span></p>
+          <div class="card-divider"></div>
+          <div class="card-footer"><span></span><button class="btn-start">Bắt đầu ›</button></div>
+        </div>
+        <div class="exam-card">
+          <div class="tag-row">
+            <span class="tag tag-hot"><svg class="icon" aria-hidden="true"><use href="#ic-flame"/></svg>HOT</span>
+            <span class="tag tag-new"><svg class="icon" aria-hidden="true"><use href="#ic-sparkle"/></svg>NEW</span>
+          </div>
+          <div class="meta-row"><span class="type-icon">F</span><span class="tag-forecast"><svg class="icon" aria-hidden="true"><use href="#ic-tag"/></svg>Forecast</span><span class="meta-text">Forecast 04</span></div>
+          <h3 class="exam-title">Technology and Innovation</h3>
+          <p class="exam-status">Chưa làm</p>
+          <div class="card-divider"></div>
+          <div class="card-footer"><span></span><button class="btn-start">Bắt đầu ›</button></div>
+        </div>
+        <div class="exam-card">
+          <div class="tag-row"><span class="tag tag-hot"><svg class="icon" aria-hidden="true"><use href="#ic-flame"/></svg>HOT</span></div>
+          <div class="meta-row"><span class="type-icon">1</span><span class="tag-forecast"><svg class="icon" aria-hidden="true"><use href="#ic-tag"/></svg>Forecast</span><span class="meta-text">Forecast 05</span></div>
+          <h3 class="exam-title">Family Relationships</h3>
+          <p class="exam-status">Chưa làm</p>
+          <div class="card-divider"></div>
+          <div class="card-footer">
+            <span class="tag-premium"><svg class="icon" aria-hidden="true"><use href="#ic-crown"/></svg>PREMIUM</span>
+            <button class="btn-start" onclick="openPaywall()">Bắt đầu ›</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="allExamsEmpty" class="state-block" style="display:none">
+        <svg class="icon-xl" aria-hidden="true"><use href="#ic-search-x"/></svg>
+        <h3>Không có đề nào khớp với bộ lọc</h3>
+        <p>Thử bỏ bớt 1 bộ lọc để xem thêm đề</p>
+        <button class="btn-retry" id="btnClearFilter">Xoá bộ lọc</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ============ Popup Paywall — bảng 4 gói ============ -->
+<div class="modal-overlay" id="paywallModal" onclick="if(event.target===this) closePaywall()">
+  <div class="pricing-modal" role="dialog" aria-modal="true" aria-labelledby="pricingTitle">
+    <button class="modal-close" onclick="closePaywall()" aria-label="Đóng">
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="m5 5 14 14M19 5 5 19"/></svg>
+    </button>
+    <div class="pricing-head">
+      <h2 id="pricingTitle">Mua ngay gói PRO để học hành không giới hạn</h2>
+      <p>Khám phá tiềm năng của bạn với việc luyện tập AI không giới hạn và phản hồi chi tiết.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-plan-name">Gói 3 tháng</div>
+        <p class="price-plan-desc">Phù hợp nhất với chương trình học hiện tại để đạt hiệu quả tốt nhất</p>
+        <div class="price-amount">0 <span class="unit">/tháng</span></div>
+        <ul class="price-features">
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>1 lượt thi thử &amp; chấm mỗi tuần</li>
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>10 lượt luyện mẫu câu</li>
+        </ul>
+        <button class="price-cta" disabled>Gói hiện tại</button>
+      </div>
+      <div class="price-card">
+        <div class="price-plan-name">Gói 1 tháng</div>
+        <p class="price-plan-desc">Phù hợp nhất với chương trình học hiện tại để đạt hiệu quả tốt nhất</p>
+        <div class="price-amount">69.000<span class="unit">₫</span></div>
+        <ul class="price-features">
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>Tiếp cận bộ đề forecast mới nhất</li>
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>10 lượt thi thử mỗi tháng</li>
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>Mở khoá toàn bộ lượt luyện tập</li>
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>Hỗ trợ viên 24/7</li>
+        </ul>
+        <button class="price-cta">Mua ngay</button>
+      </div>
+      <div class="price-card featured">
+        <span class="price-badge">PHỔ BIẾN NHẤT</span>
+        <div class="price-plan-name">Gói 6 tháng</div>
+        <p class="price-plan-desc">Phù hợp nhất với chương trình học hiện tại để đạt hiệu quả tốt nhất</p>
+        <div class="price-amount">399.000<span class="unit">₫</span></div>
+        <ul class="price-features">
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>Tiếp cận bộ đề forecast mới nhất</li>
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>15 lượt thi thử mỗi tháng</li>
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>Mở khoá toàn bộ lượt luyện tập</li>
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>Hỗ trợ viên 24/7</li>
+        </ul>
+        <button class="price-cta">Mua ngay</button>
+      </div>
+      <div class="price-card dark">
+        <div class="price-plan-name">Gói 12 tháng</div>
+        <p class="price-plan-desc">Phù hợp nhất với chương trình học hiện tại để đạt hiệu quả tốt nhất</p>
+        <div class="price-amount">699.000<span class="unit">₫</span></div>
+        <ul class="price-features">
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>Tiếp cận bộ đề forecast mới nhất</li>
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>20 lượt thi thử mỗi tháng</li>
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>Mở khoá toàn bộ lượt luyện tập</li>
+          <li><svg class="check-icon" aria-hidden="true"><use href="#ic-check"/></svg>Hỗ trợ viên 24/7</li>
+        </ul>
+        <button class="price-cta">Mua ngay</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- State card switch ----
+  const stateSelect = document.getElementById('stateSelect');
+  const states = ['sang-luyen-tiep', 'dang-lam-do', 'kiem-tra-trinh-do'];
+  function renderState() {
+    states.forEach(s => {
+      document.getElementById('state-' + s).style.display = (s === stateSelect.value) ? 'flex' : 'none';
+    });
+  }
+  stateSelect.addEventListener('change', renderState);
+  renderState();
+
+  // ---- Data state switch (loaded / loading / error / empty) ----
+  const dataStateSelect = document.getElementById('dataStateSelect');
+  function renderDataState() {
+    const v = dataStateSelect.value;
+    document.getElementById('view-loading').style.display = v === 'loading' ? 'block' : 'none';
+    document.getElementById('view-error').style.display = v === 'error' ? 'block' : 'none';
+    document.getElementById('view-loaded').style.display = (v === 'loaded' || v === 'empty') ? 'block' : 'none';
+    document.getElementById('allExamsGrid').style.display = v === 'empty' ? 'none' : 'grid';
+    document.getElementById('allExamsEmpty').style.display = v === 'empty' ? 'block' : 'none';
+  }
+  dataStateSelect.addEventListener('change', renderDataState);
+  document.getElementById('btnClearFilter').addEventListener('click', () => { dataStateSelect.value = 'loaded'; renderDataState(); });
+  renderDataState();
+
+  // ---- Tabs (keyboard-accessible, roving tabindex, arrow keys) ----
+  const tabs = Array.from(document.querySelectorAll('.tab-item'));
+  function selectTab(tab) {
+    tabs.forEach(t => { t.setAttribute('aria-selected', 'false'); t.tabIndex = -1; });
+    tab.setAttribute('aria-selected', 'true'); tab.tabIndex = 0; tab.focus();
+  }
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => selectTab(tab));
+    tab.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') { selectTab(tabs[(i + 1) % tabs.length]); e.preventDefault(); }
+      if (e.key === 'ArrowLeft') { selectTab(tabs[(i - 1 + tabs.length) % tabs.length]); e.preventDefault(); }
+    });
+  });
+
+  // ---- Filter pills (toggle button, aria-pressed) ----
+  document.querySelectorAll('.pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      if (pill.dataset.pill === 'all') {
+        document.querySelectorAll('.pill').forEach(p => p.setAttribute('aria-pressed', 'false'));
+        pill.setAttribute('aria-pressed', 'true');
+      } else {
+        document.querySelector('[data-pill="all"]').setAttribute('aria-pressed', 'false');
+        pill.setAttribute('aria-pressed', pill.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+      }
+    });
+  });
+
+  // ---- Modal: open/close + focus trap + Escape ----
+  const modal = document.getElementById('paywallModal');
+  let lastFocused = null;
+  function getFocusable() { return Array.from(modal.querySelectorAll('button, [href], select, [tabindex]:not([tabindex="-1"])')); }
+  function openPaywall() {
+    lastFocused = document.activeElement;
+    modal.classList.add('open');
+    const focusables = getFocusable();
+    if (focusables.length) focusables[0].focus();
+    document.addEventListener('keydown', onModalKeydown);
+  }
+  function closePaywall() {
+    modal.classList.remove('open');
+    document.removeEventListener('keydown', onModalKeydown);
+    if (lastFocused) lastFocused.focus();
+  }
+  function onModalKeydown(e) {
+    if (e.key === 'Escape') { closePaywall(); return; }
+    if (e.key === 'Tab') {
+      const focusables = getFocusable();
+      if (!focusables.length) return;
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
+      else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
+    }
+  }
+  window.openPaywall = openPaywall;
+  window.closePaywall = closePaywall;
+</script>
+
+</body>
+</html>

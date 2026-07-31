@@ -1,329 +1,372 @@
-# PRD — MockTest ↔ Practice Connection Flow
+# PRD: Luồng kết nối MockTest ↔ Practice
 
 | | |
 |---|---|
-| **Product** | 9Speak — IELTS Speaking |
-| **Feature** | Kết nối MockTest → Practice (Loop closing) |
-| **Scope** | MVP — Wave 1 |
+| **Sản phẩm** | 9Speak — IELTS Speaking |
+| **Tính năng** | Kết nối MockTest → Practice (vòng lặp học) |
 | **Ngày** | 2026-07-25 |
-| **Trạng thái** | Sẵn sàng triển khai |
-| **Tài liệu liên quan** | [Spec đầy đủ](./MOCKTEST_PRACTICE_CONNECTION_SPEC.md) · [Handoff & decisions](./MOCKTEST_PRACTICE_CONNECTION_HANDOFF.md) |
+| **Trạng thái** | Sẵn sàng triển khai — V1 |
 
 ---
 
-## Mục lục
+## Mục tiêu
 
-1. [Goal](#1-goal)
-2. [Context](#2-context)
-3. [Metrics](#3-metrics)
-4. [Requirements](#4-requirements)
-5. [User Types](#5-user-types)
-6. [Analytics](#6-analytics)
-7. [Timelines](#7-timelines)
-8. [Dependencies](#8-dependencies)
-9. [Appendix](#9-appendix)
+Đóng vòng lặp **Thi → Luyện → Thi lại** — hiện tại phần lớn người dùng thi MockTest xong không biết phải làm gì tiếp theo và không chuyển sang luyện Practice trong vòng 7 ngày.
+
+Feature này tạo các điểm chuyển tiếp tự nhiên:
+- Thi MockTest xong → biết ngay mình cần luyện tiêu chí nào
+- Vào Practice từ MockTest → thấy rõ mình đang luyện vì lý do gì
+- Vào trang Hiệu suất → nhận gợi ý hành động phù hợp với tình trạng thực tế
 
 ---
 
-## 1. Goal
+## Không thuộc phạm vi V1
 
-### 1.1 Business / Product Goal
-
-Đóng vòng lặp **Diagnose → Practice → Validate** — hiện tại 83.8% users không cross modules trong 7 ngày. Feature này tạo touchpoints dẫn user từ MockTest report sang luyện đúng điểm yếu, và từ Practice nhớ quay lại thi kiểm tra tiến bộ.
-
-### 1.2 User Benefits
-
-- **Sau MockTest:** Biết ngay phải luyện criterion nào — không phải tự đoán.
-- **Khi vào Practice từ MockTest:** Hiểu context tại sao đang luyện criterion này.
-- **Trên Performance page:** Nhận gợi ý action phù hợp theo trạng thái thực tế.
+| Tính năng | Lý do |
+|----------|-------|
+| Lọc bài luyện Practice theo đúng tiêu chí từ MockTest | Backend Practice chưa hỗ trợ lọc topic theo tiêu chí — cần backend update trước |
+| Hiển thị 2 gợi ý cùng lúc khi Phát âm là tiêu chí yếu nhất | Phụ thuộc tính năng lọc phía trên |
+| Gợi ý luyện khởi động trước khi thi MockTest | Sai timing — đây là lúc người dùng đang tập trung chuẩn bị thi |
 
 ---
 
-## 2. Context
+## Phạm vi V1 — 4 thay đổi
 
-### 2.1 Usage Data / UXR Insights
-
-| Insight | Nguồn |
-|---------|-------|
-| 83.8% users không cross modules trong 7 ngày | Mixpanel — 7 ngày gần nhất |
-| Average gap Practice → MockTest: ~14.5h | Mixpanel |
-| Practice sidebar clicks 3× MockTest (30.3% vs 10.5%) | Mixpanel |
-| Không có positive correlation giữa Practice sessions và MockTest score | Mixpanel — selection bias |
-
-### 2.2 Recommendation
-
-- Xây **touchpoint chủ động** ngay tại MockTest report dẫn sang Practice đúng criterion yếu.
-- Tránh claim causation (không có causal backing) — chỉ hiển thị delta và gợi ý.
-- Tạo **loop language** nhất quán (↻ / "Bước tiếp theo →") xuyên suốt các touchpoints.
+| | Vị trí | Thay đổi |
+|--|--------|---------|
+| **A** | MockTest Report — cuối phần Tổng quan | Thêm zone "Bước tiếp theo": so sánh điểm + gợi ý luyện Practice |
+| **B** | Practice | Thêm banner nhắc ngữ cảnh khi vào từ MockTest |
+| **C** | Trang Hiệu suất `/hieu-suat` | Thêm action card gợi ý theo trạng thái hiện tại |
+| **D** | MockTest Report — tab Phát âm | Thêm nhãn phụ cho nút luyện từng từ |
 
 ---
 
-## 3. Metrics
+## Metrics
 
-### 3.1 Measurement Mechanism
+### Chỉ số chính
 
-- **Sample:** Tất cả users thi MockTest và xem report hoàn chỉnh.
-- **Method:** Event tracking qua Mixpanel. Đo trước/sau launch, không A/B test ở Wave 1.
+| Chỉ số | Hiện tại | Mục tiêu | Thời gian đo |
+|--------|----------|---------|--------------|
+| Tỷ lệ cross-module (có cả MockTest + Practice trong 7 ngày) | 16.2% | ≥ 25% | 30 ngày |
+| Tỷ lệ nhấn CTA từ MockTest report | ~0% | ≥ 20% | 2 tuần |
+| Tỷ lệ nhấn Action Card trên trang Hiệu suất | Chưa có | ≥ 30% | 30 ngày |
 
-### 3.2 North Star Metric
+### Chỉ số cần giữ nguyên (không được tụt)
 
-Cross-module rate: % users có cả MockTest lẫn Practice activity trong 7 ngày.
-
-> **Baseline hiện tại:** 16.2% · **Target:** ≥25% sau 30 ngày
-
-### 3.3 Success Metrics
-
-| Metric | Baseline | Target | Thời gian đo |
-|--------|----------|--------|--------------|
-| CTA click-through rate (report → Practice) | ~0% | ≥20% | 2 tuần sau launch |
-| Cross-module rate (7 ngày) | 16.2% | ≥25% | 30 ngày sau launch |
-| Performance page Action Card click rate | TBD | ≥30% users vào `/hieu-suat` | 30 ngày sau launch |
-
-### 3.4 Guardrail Metrics
-
-Không được ảnh hưởng tiêu cực:
-- MockTest completion rate (user không bỏ dở report vì bị distract bởi CTA mới)
-- Practice session start rate (banner không gây friction)
+- Tỷ lệ hoàn thành report MockTest
+- Tỷ lệ bắt đầu session Practice
 
 ---
 
-## 4. Requirements
+---
 
-> **Constraint kiến trúc bắt buộc:** MockTest và Practice bị ESLint enforce không được import lẫn nhau. Cross-module = URL navigation only: `?source=mock-report&criterion=[criterion]&sessionId=[id]`
+## A. MockTest Report — Zone "Bước tiếp theo"
+
+### Mô tả
+
+Zone này đặt **sau bảng 4 tiêu chí (Tổng quan)**, trước phần chọn Part. Gồm hai phần:
+
+1. Card so sánh điểm với lần thi trước
+2. Nút gợi ý luyện tiêu chí yếu nhất trong Practice
+
+**Điều kiện hiển thị:** Chỉ hiển thị khi báo cáo đã hoàn chỉnh — có đủ điểm band và phân tích cho cả 4 tiêu chí. Ẩn hoàn toàn khi báo cáo đang chờ chấm hoặc thiếu tiêu chí.
 
 ---
 
-### 4.1 Functional Requirements
+### A.1 Card so sánh điểm
+
+Chỉ hiển thị khi người dùng đang xem **kết quả phiên thi mới nhất**.
+
+**Nội dung:**
+```
+Lần trước: 6.0 → Lần này: 6.5 (+0.5)
+```
+```
+Lần trước: 6.5 → Lần này: 6.0 (−0.5)
+```
+
+Khi điểm giảm, thêm dòng chú thích:
+```
+Band có thể dao động giữa các lần thi — tiếp tục luyện để ổn định kết quả.
+```
+
+**Không hiển thị khi:**
+- Đây là lần thi đầu tiên (không có lần trước để so sánh)
+- Đang xem lại lịch sử thi cũ
 
 ---
 
-#### Feature A — MockTest Report: Practice CTA
+### A.2 Nút gợi ý luyện Practice
 
-**Mô tả:** Zone "Bước tiếp theo" đặt sau accordion 4 tiêu chí (cuối section Tổng quan), trước Part selector. Hiển thị 1 CTA dẫn sang Practice với criterion yếu nhất.
+**Cách chọn tiêu chí gợi ý:** Tiêu chí có band thấp nhất trong 4 tiêu chí. Khi có 2+ tiêu chí cùng thấp, ưu tiên theo thứ tự: **Từ vựng → Ngữ pháp → Độ trôi chảy → Phát âm**.
 
-**Điều kiện hiển thị:** Report hoàn chỉnh — band + vocab/grammar đủ 4 tiêu chí. Ẩn khi report partial.
+*Thứ tự ưu tiên này dùng nhất quán ở mọi nơi trong feature.*
 
-**Criterion yếu nhất:** Band thấp nhất. Tie-breaker cố định: `Vocabulary → Grammar → Fluency → Pronunciation`.
+**Khi còn lượt luyện:**
+```
+[Nút]       Luyện Từ vựng tại Practice →
+[Chú thích] Band 6.0 · 3 lượt còn lại
+```
+*(Người dùng không giới hạn: "Band 6.0 · Không giới hạn")*
 
-| Case | Scenario | Expected Behavior |
-|------|----------|------------------|
-| ✅ Happy | Report hoàn chỉnh, user còn lượt | CTA hiển thị: `"Luyện [Criterion] tại Practice →"` + sub-text `"Band [X.X] · [N] lượt còn lại"` |
-| ✅ Happy | Premium user | Sub-text: `"Band [X.X] · Unlimited"` |
-| ✅ Happy | User click CTA | Navigate `/practice?source=mock-report&criterion=[criterion]&sessionId=[id]` |
-| ⚠️ Corner | 0 lượt còn lại | Label đổi thành `"Nạp lượt để luyện [Criterion] →"`, click → billing flow in-context |
-| ⚠️ Corner | Report partial / đang chấm | Zone ẩn hoàn toàn |
-| ⚠️ Corner | Tie giữa 2+ criterion | Dùng fallback order: Vocabulary → Grammar → Fluency → Pronunciation |
+Nhấn nút → chuyển sang Practice, kèm ngữ cảnh tiêu chí cần luyện.
 
-> **Wave 1 scope:** Không có Before/After delta card (deferred sang Wave 2). Luôn 1 CTA duy nhất.
+**Khi hết lượt (0 lượt):**
+```
+[Nút] Nạp lượt để luyện Từ vựng →
+```
+Nhấn nút → mở màn nạp lượt **ngay tại trang này** — không chuyển sang Practice rồi mới báo hết lượt.
 
-**Acceptance Criteria:**
-
-**AC-A01: Zone ẩn khi report chưa hoàn chỉnh**
-- **Given:** Report đang chấm hoặc thiếu tiêu chí
-- **When:** User mở MockTest report
-- **Then:** Zone "Bước tiếp theo" không render
-
-**AC-A02: CTA hiển thị đúng criterion và lượt**
-- **Given:** Report hoàn chỉnh, `remainingPracticeUses > 0`
-- **When:** User scroll đến cuối Tổng quan
-- **Then:** Label `"Luyện [tên criterion] tại Practice →"` với criterion đúng AND sub-text `"Band [X.X] · [N] lượt còn lại"` (hoặc `"Unlimited"` nếu premium)
-
-**AC-A03: Click CTA navigate đúng URL**
-- **Given:** User còn lượt, click CTA
-- **When:** Click
-- **Then:** Navigate `/practice?source=mock-report&criterion=[criterion]&sessionId=[id]` với giá trị chính xác
-
-**AC-A04: Upsell khi 0 lượt**
-- **Given:** `remainingPracticeUses = 0`
-- **When:** Zone render
-- **Then:** Label `"Nạp lượt để luyện [Criterion] →"` AND click mở billing flow in-context (không navigate sang Practice)
-
-**AC-A05: Tie-breaker nhất quán**
-- **Given:** 2+ criterion cùng band thấp nhất
-- **When:** Zone render
-- **Then:** CTA hiển thị criterion đầu tiên trong fallback order (Vocabulary > Grammar > Fluency > Pronunciation)
+**Số lượng nút:** Luôn đúng **1 nút** trong V1.
 
 ---
 
-#### Feature B — Practice: Context Banner
+### A.3 Tiêu chí chấp nhận
 
-**Mô tả:** Banner xuất hiện ở đầu Practice khi user đến từ MockTest (URL params present). Clear params ngay sau render đầu.
+**AC-A01: Zone ẩn khi báo cáo chưa hoàn chỉnh**
+- Cho: Báo cáo đang chấm hoặc thiếu tiêu chí
+- Khi: Người dùng mở MockTest report
+- Thì: Zone "Bước tiếp theo" không hiển thị
 
-| Case | Scenario | Expected Behavior |
-|------|----------|------------------|
-| ✅ Happy | Đến từ MockTest, sessionId hợp lệ | Banner: `"Đang luyện theo gợi ý từ phiên thi [ngày] · Xem lại báo cáo ›"` |
-| ✅ Happy | User navigate sang câu hỏi khác | Banner biến mất |
-| ⚠️ Corner | sessionId không thuộc user hiện tại | Banner không xuất hiện (silent fail) |
-| ⚠️ Corner | User nhấn browser back | Banner không re-appear (params đã clear bằng `router.replace`) |
+**AC-A02: Zone hiển thị đúng vị trí**
+- Cho: Báo cáo hoàn chỉnh
+- Khi: Người dùng cuộn đến cuối phần Tổng quan
+- Thì: Zone xuất hiện sau bảng 4 tiêu chí, trước phần chọn Part
 
-**Acceptance Criteria:**
+**AC-A03: Chọn đúng tiêu chí yếu nhất**
+- Cho: Báo cáo với 4 tiêu chí có điểm band khác nhau
+- Khi: Zone hiển thị
+- Thì: Nút gợi ý đúng tiêu chí có band thấp nhất
 
-**AC-B01: Banner xuất hiện và params được clear**
-- **Given:** User đến từ MockTest với params `?source=mock-report&criterion=X&sessionId=Y`
-- **When:** Practice page mount
-- **Then:** Banner render với đúng nội dung AND URL đổi thành `/practice` (params clear) AND browser back không quay về URL có params
+**AC-A04: Tie-breaker đúng thứ tự**
+- Cho: 2+ tiêu chí cùng band thấp nhất
+- Khi: Zone hiển thị
+- Thì: Gợi ý tiêu chí đầu tiên theo thứ tự Từ vựng → Ngữ pháp → Trôi chảy → Phát âm
 
-**AC-B02: Banner biến mất khi navigate**
-- **Given:** Banner đang hiển thị
-- **When:** User chọn câu hỏi khác
-- **Then:** Banner không còn hiển thị
+**AC-A05: Card so sánh điểm — chỉ ở session mới nhất**
+- Cho: Người dùng đang xem kết quả mới nhất, đã có lần thi trước
+- Khi: Zone hiển thị
+- Thì: Card so sánh xuất hiện với delta chính xác
 
-**AC-B03: Click link quay lại report**
-- **Given:** Banner hiển thị, sessionId hợp lệ
-- **When:** User click `"Xem lại báo cáo ›"`
-- **Then:** Navigate sang MockTest report của đúng sessionId đó
+**AC-A06: Card so sánh điểm — ẩn khi xem lịch sử cũ**
+- Cho: Người dùng đang xem lại lịch sử thi cũ
+- Khi: Zone hiển thị
+- Thì: Card so sánh không xuất hiện; nút gợi ý Practice vẫn hiển thị bình thường
 
----
+**AC-A07: Card so sánh điểm — lần thi đầu tiên**
+- Cho: Đây là lần thi đầu tiên (không có lần trước)
+- Khi: Zone hiển thị
+- Thì: Card so sánh không xuất hiện; nút gợi ý Practice vẫn hiển thị
 
-#### Feature C — Performance Page `/hieu-suat`: Action Card
+**AC-A08: Framing khi điểm giảm**
+- Cho: Điểm band lần này thấp hơn lần trước
+- Khi: Card so sánh hiển thị
+- Thì: Dòng chú thích "Band có thể dao động..." xuất hiện bên dưới card
 
-**Mô tả:** 1 action card gợi ý action phù hợp theo trạng thái MockTest hiện tại. Priority: A > C > D > B.
+**AC-A09: Nút hiển thị đúng khi còn lượt**
+- Cho: Người dùng còn lượt luyện
+- Khi: Zone hiển thị
+- Thì: Label "Luyện [Tiêu chí] tại Practice →" với tên tiêu chí đúng; chú thích hiển thị số lượt còn lại (hoặc "Không giới hạn" với người dùng không giới hạn)
 
-**Logic states (cooldown = 7 ngày):**
+**AC-A10: Nút chuyển đổi thành upsell khi hết lượt**
+- Cho: Người dùng hết lượt luyện
+- Khi: Zone hiển thị
+- Thì: Label đổi thành "Nạp lượt để luyện [Tiêu chí] →"; nhấn mở màn nạp lượt ngay tại trang, không chuyển sang Practice
 
-| State | Điều kiện | Copy | Destination |
-|-------|-----------|------|------------|
-| **A** | Chưa có MockTest nào | `"Thi thử để biết band thật của bạn →"` | MockTest |
-| **C** | MockTest cuối: 7–30 ngày trước | `"Đã [X] ngày kể từ lần thi — thử lại để cập nhật band →"` | MockTest |
-| **D** | MockTest cuối: >30 ngày trước | `"Đã lâu không kiểm tra — thi thử để cập nhật band →"` | MockTest |
-| **B** | MockTest cuối: trong 7 ngày qua | `"Tiếp tục luyện [Criterion yếu nhất] →"` | Practice |
-| Default | Không match | Không hiển thị card | — |
-
-> State B dùng cùng fallback order criterion: Vocabulary → Grammar → Fluency → Pronunciation.  
-> State B **không** nudge "thi lại" — user vừa mới thi.
-
-**Acceptance Criteria:**
-
-**AC-C01: Đúng 1 card theo priority**
-- **Given:** Bất kỳ trạng thái nào
-- **When:** Performance page load
-- **Then:** Hiển thị đúng 1 card match state có priority cao nhất (A > C > D > B) OR không hiển thị card nào nếu không match
-
-**AC-C02: Copy và destination đúng theo từng state**
-- **Given:** MockTest gần nhất [X] ngày trước
-- **When:** Card render
-- **Then:** Copy và destination click đúng với state tương ứng (theo bảng trên)
-
-**AC-C03: State B không nudge "thi lại"**
-- **Given:** MockTest gần nhất < 7 ngày trước (State B)
-- **When:** Card render
-- **Then:** Copy là `"Tiếp tục luyện [Criterion] →"` AND không có text liên quan đến "thi lại" hay "thi thử"
+**AC-A11: Luôn đúng 1 nút**
+- Cho: Bất kỳ trạng thái nào
+- Khi: Zone hiển thị
+- Thì: Chỉ có đúng 1 nút gợi ý
 
 ---
 
-#### Feature D — Mini-drill Differentiation Label
+---
 
-**Mô tả:** Thêm label phụ cho nút `"Luyện ›"` trong tab Phát âm để phân biệt với Practice CTA.
+## B. Practice — Banner ngữ cảnh
 
-**Acceptance Criteria:**
+### Mô tả
 
-**AC-D01: Label phụ đúng chỗ, không thay đổi behavior**
-- **Given:** User mở tab Phát âm trong MockTest report
-- **When:** Tab render
-- **Then:** Nút `"Luyện ›"` hiển thị kèm `"(Miễn phí · 1 từ)"` AND hành vi nút giữ nguyên AND các tab khác không có label này
+Khi người dùng vào Practice từ MockTest report, một banner hiển thị ở đầu trang để nhắc lý do đang luyện tiêu chí này.
+
+**Nội dung banner:**
+```
+Đang luyện theo gợi ý từ phiên thi [ngày] · Xem lại báo cáo ›
+```
 
 ---
 
-### 4.2 Non-Functional Requirements
+### Vòng đời banner
 
-#### Performance
-- Zone "Bước tiếp theo" render trong cùng paint với phần còn lại của Tổng quan (không lazy load riêng).
-- Context Banner render synchronously từ URL params — không gây layout shift.
-
-#### Compatibility
-- Theo thiết lập hiện tại của 9Speak (Next.js, mobile-first web app).
-- `router.replace` sử dụng Next.js router — không tương thích với native browser history API.
-
-#### Constraint kiến trúc
-- MockTest và Practice không được import lẫn nhau (ESLint rule).
-- Mọi cross-module interaction = URL params only.
-- URL params clear bằng `router.replace` (không tạo history entry mới).
+| Thời điểm | Hành vi |
+|-----------|---------|
+| Vừa vào Practice từ MockTest | Banner hiển thị |
+| Chuyển sang câu hỏi khác | Banner biến mất |
+| Nhấn browser back rồi vào lại | Banner không hiển thị lại |
+| Ai đó copy URL chia sẻ → người khác mở | Banner không hiển thị (không lộ thông tin phiên thi của người khác) |
+| Vào Practice trực tiếp (không từ MockTest) | Banner không hiển thị |
 
 ---
 
-## 5. User Types
+### Tiêu chí chấp nhận
 
-| User Type | Định nghĩa | Behavior |
-|-----------|-----------|---------|
-| User thường (có lượt) | `remainingPracticeUses > 0` | Thấy CTA với số lượt còn lại |
-| Premium user | Unlimited practice | Sub-text hiển thị "Unlimited" |
-| User hết lượt | `remainingPracticeUses = 0` | Thấy upsell CTA in-context |
-| User lần đầu | Chưa có MockTest nào | Performance page State A |
-| User active | MockTest trong 7 ngày | Performance page State B (cooldown) |
-| User lapsed | MockTest >7 ngày trước | Performance page State C hoặc D |
+**AC-B01: Banner xuất hiện đúng lúc**
+- Cho: Người dùng nhấn nút từ MockTest report
+- Khi: Trang Practice tải xong
+- Thì: Banner xuất hiện ở đầu trang với đúng ngày thi
 
----
+**AC-B02: Nhấn "Xem lại báo cáo" đúng đích**
+- Cho: Banner đang hiển thị
+- Khi: Người dùng nhấn "Xem lại báo cáo ›"
+- Thì: Chuyển về đúng báo cáo MockTest của phiên thi đó
 
-## 6. Analytics
+**AC-B03: Banner biến mất khi chuyển câu**
+- Cho: Banner đang hiển thị
+- Khi: Người dùng chọn câu hỏi khác trong Practice
+- Thì: Banner không còn hiển thị
 
-### 6.1 Instrumentation
+**AC-B04: Banner không hiển thị lại sau browser back**
+- Cho: Người dùng đã vào Practice từ MockTest, banner đã hiển thị
+- Khi: Nhấn browser back rồi vào lại Practice
+- Thì: Banner không hiển thị lần thứ hai
 
-| Event | Trigger | Properties |
-|-------|---------|-----------|
-| `mocktest_report_cta_viewed` | Zone "Bước tiếp theo" render | `criterion`, `remaining_uses`, `session_id` |
-| `mocktest_report_cta_clicked` | Click Practice CTA | `criterion`, `remaining_uses`, `session_id`, `cta_type: "practice" \| "upsell"` |
-| `practice_context_banner_viewed` | Banner render trong Practice | `source_session_id`, `criterion` |
-| `practice_context_banner_clicked` | Click "Xem lại báo cáo ›" | `source_session_id` |
-| `performance_action_card_viewed` | Card render trên `/hieu-suat` | `state: "A" \| "B" \| "C" \| "D"`, `days_since_last_mocktest` |
-| `performance_action_card_clicked` | Click action card | `state`, `destination: "mocktest" \| "practice"` |
-
-### 6.2 Dashboard
-
-| Dashboard | Metrics | Priority |
-|-----------|---------|----------|
-| Loop closing funnel | CTA view → click → Practice start → MockTest repeat | P0 |
-| Cross-module rate | % users cross modules / 7 ngày | P0 |
-| Upsell engagement | Clicks trên upsell CTA / tổng views 0-lượt | P1 |
+**AC-B05: Banner không hiển thị với tài khoản khác**
+- Cho: URL Practice được chia sẻ sang tài khoản khác
+- Khi: Người dùng đó mở URL
+- Thì: Banner không hiển thị
 
 ---
 
-## 7. Timelines
+---
 
-| Milestone | Target | Status |
-|-----------|--------|--------|
-| Dev handoff (Wave 1) | TBD | ⬜ |
-| QA & review | TBD | ⬜ |
-| Release Wave 1 | TBD | ⬜ |
-| Đánh giá metrics (2 tuần) | TBD | ⬜ |
-| Wave 2 kickoff (Before/After card, Performance Card) | Sau khi có data Wave 1 | ⬜ |
+## C. Trang Hiệu suất — Action Card
+
+### Mô tả
+
+Một card gợi ý hành động trên trang `/hieu-suat`, dựa trên thời điểm người dùng thi MockTest gần nhất. Luôn hiển thị đúng **1 card** (hoặc không có card nếu không cần).
 
 ---
 
-## 8. Dependencies
+### Logic 4 trạng thái
 
-### 8.1 Internal
+Ưu tiên hiển thị từ cao xuống thấp: **A → C → D → B**
 
-| Dependency | Owner | Status | Blocking? |
-|-----------|-------|--------|-----------|
-| `remainingPracticeUses` exposed tại root app (NineSpeak profile) | Engineering | ✅ Có sẵn | No |
-| `history-client` từ `features/shared/` (Performance page đang dùng) | Engineering | ✅ Có sẵn | No |
-| Billing flow API cho upsell in-context | Engineering | ⬜ Cần confirm | Yes (Feature A upsell) |
-| MockTest report expose criterion bands đủ 4 tiêu chí | Engineering | ✅ Có sẵn | No |
+| Trạng thái | Điều kiện | Nội dung gợi ý | Nhấn vào đâu |
+|-----------|-----------|---------------|-------------|
+| **A** | Chưa thi MockTest lần nào | Thi thử để biết band thật của bạn → | MockTest |
+| **C** | Lần thi cuối: 7–30 ngày trước | Đã [X] ngày kể từ lần thi — thử lại để cập nhật band → | MockTest |
+| **D** | Lần thi cuối: hơn 30 ngày trước | Đã lâu không kiểm tra — thi thử để cập nhật band → | MockTest |
+| **B** | Lần thi cuối: trong vòng 7 ngày | Tiếp tục luyện [Tiêu chí yếu nhất] → | Practice |
 
-### 8.2 External / V2 Blocker
+**Lưu ý trạng thái B:**
+- Không gợi ý "thi lại" — người dùng vừa thi, cần thời gian luyện trước
+- Tiêu chí yếu nhất lấy từ kết quả MockTest gần nhất, theo thứ tự ưu tiên: Từ vựng → Ngữ pháp → Trôi chảy → Phát âm
 
-| Dependency | Mô tả | Blocking gì |
-|-----------|-------|------------|
-| BFF `/api/app/speaking/practice/catalog` thêm `criterionTags` | Practice catalog chưa có tags | Deep-link criterion-filtered (V2) |
+**Lưu ý trạng thái C:**
+- `[X]` = số ngày tính từ ngày thi đến hôm nay
+- Không có điều kiện nào khác ngoài số ngày
 
 ---
 
-## 9. Appendix
+### Xử lý trường hợp đặc biệt
 
-| Tài liệu | Mô tả |
-|---------|-------|
-| [Handoff & decisions](./MOCKTEST_PRACTICE_CONNECTION_HANDOFF.md) | Toàn bộ decisions đã chốt, conflict resolutions, business rules |
-| [Spec đầy đủ V1](./MOCKTEST_PRACTICE_CONNECTION_SPEC.md) | FR/BR/AC chi tiết cho cả 4 components |
-| [MockTest Report §07](../../modules/mock-test/screens/07-report-tong-quan.md) | Tổng quan section — nơi đặt Feature A |
-| [MockTest Report §08](../../modules/mock-test/screens/08-report-phan-hoi-chi-tiet.md) | Tab Phát âm — nơi đặt Feature D |
-| [Practice PRD](../../modules/practice/PRD.md) | Practice module scope — Feature B |
-| [Performance PRD](../../modules/performance/PRD.md) | Performance page — Feature C |
+| Trường hợp | Hành vi |
+|-----------|---------|
+| Dữ liệu chưa tải xong | Card không hiển thị |
+| Lần thi cuối đúng ngày thứ 7 | Tính là ≥7 ngày → trạng thái C |
+| Trạng thái B nhưng không xác định được tiêu chí yếu nhất | Hiển thị "Tiếp tục luyện Từ vựng →" (mặc định) |
 
-### V2 Backlog (ngoài scope PRD này)
+---
 
-| Item | Blocker |
-|------|---------|
-| Before/After delta card trong MockTest report | Cần `previousSession.overallBand` từ history-client |
-| Deep-link criterion-filtered trong Practice | BFF cần `criterionTags` |
-| Dual-CTA Pronunciation | Phụ thuộc criterion filter |
-| Mixpanel: `attempt_number`, `score_delta` instrumentation | Data layer work |
+### Câu hỏi cần design xác nhận trước khi build
+
+| | Câu hỏi |
+|--|---------|
+| OQ-01 | Action Card đặt ở đâu trong layout trang Hiệu suất — trên hay dưới biểu đồ tổng hợp? |
+
+---
+
+### Tiêu chí chấp nhận
+
+**AC-C01: Trạng thái A — chưa thi MockTest**
+- Cho: Người dùng chưa có MockTest nào
+- Khi: Vào trang Hiệu suất
+- Thì: Card hiển thị "Thi thử để biết band thật của bạn →"; nhấn → vào MockTest
+
+**AC-C02: Trạng thái B — trong vòng 7 ngày**
+- Cho: Lần thi gần nhất dưới 7 ngày trước
+- Khi: Vào trang Hiệu suất
+- Thì: Card hiển thị "Tiếp tục luyện [Tiêu chí] →"; nhấn → vào Practice; không có từ "thi lại" hay "thi thử"
+
+**AC-C03: Trạng thái C — 7 đến 30 ngày**
+- Cho: Lần thi gần nhất từ 7–30 ngày trước
+- Khi: Vào trang Hiệu suất
+- Thì: Card hiển thị "Đã [X] ngày kể từ lần thi — thử lại để cập nhật band →" với số ngày chính xác; nhấn → vào MockTest
+
+**AC-C04: Trạng thái D — hơn 30 ngày**
+- Cho: Lần thi gần nhất hơn 30 ngày trước
+- Khi: Vào trang Hiệu suất
+- Thì: Card hiển thị "Đã lâu không kiểm tra — thi thử để cập nhật band →"; nhấn → vào MockTest
+
+**AC-C05: Đúng ngày thứ 7**
+- Cho: Lần thi gần nhất đúng 7 ngày trước
+- Khi: Vào trang Hiệu suất
+- Thì: Hiển thị trạng thái C (không phải B)
+
+**AC-C06: Luôn đúng 1 card**
+- Cho: Bất kỳ trạng thái nào
+- Khi: Vào trang Hiệu suất
+- Thì: Hiển thị đúng 1 card (hoặc không có card nào)
+
+**AC-C07: Tie-breaker đúng thứ tự (trạng thái B)**
+- Cho: MockTest gần nhất có 2 tiêu chí cùng band thấp nhất (ví dụ Từ vựng và Ngữ pháp)
+- Khi: Card trạng thái B hiển thị
+- Thì: Gợi ý "Tiếp tục luyện Từ vựng →" (Từ vựng ưu tiên trước Ngữ pháp)
+
+---
+
+---
+
+## D. MockTest Report — Nhãn phân biệt nút luyện trong tab Phát âm
+
+### Vấn đề
+
+Trong tab Phát âm của MockTest report có nút **"Luyện ›"** (luyện phát âm từng từ, miễn phí). Với zone mới ở phần A cũng có nút "Luyện...", người dùng dễ nhầm lẫn hai nút này với nhau.
+
+### Giải pháp
+
+Thêm nhãn phụ vào nút "Luyện ›" trong tab Phát âm:
+
+```
+Luyện ›   (Miễn phí · 1 từ)
+```
+
+- Chỉ thêm nhãn này ở **tab Phát âm**
+- Hành vi nút **không thay đổi**
+
+### Tiêu chí chấp nhận
+
+**AC-D01: Nhãn phụ hiển thị đúng chỗ**
+- Cho: Người dùng mở tab Phát âm trong MockTest report
+- Khi: Tab hiển thị
+- Thì: Nút "Luyện ›" có nhãn phụ "(Miễn phí · 1 từ)"
+
+**AC-D02: Hành vi nút không thay đổi**
+- Cho: Nhãn phụ đã được thêm
+- Khi: Người dùng nhấn nút "Luyện ›"
+- Thì: Hành vi giống hệt trước — mini-drill từng từ như cũ
+
+**AC-D03: Các tab khác không bị ảnh hưởng**
+- Cho: Người dùng mở tab Từ vựng hoặc Ngữ pháp
+- Khi: Tab hiển thị
+- Thì: Nút "Luyện ›" (nếu có) không có nhãn phụ này
+
+---
+
+---
+
+## Backlog V2
+
+| Tính năng | Điều kiện để làm |
+|----------|-----------------|
+| Lọc bài luyện Practice theo tiêu chí từ MockTest (deep-link trực tiếp) | Backend Practice hỗ trợ lọc topic theo tiêu chí |
+| Hiển thị 2 gợi ý khi Phát âm yếu nhất (Phát âm + tiêu chí yếu thứ 2) | Phụ thuộc tính năng lọc topic phía trên |
